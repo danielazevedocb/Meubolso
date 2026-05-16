@@ -1,10 +1,11 @@
-import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { router } from 'expo-router';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet } from 'react-native';
 
 import { useFocusEffect } from '@react-navigation/native';
 
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { ScreenBody } from '@/components/ScreenBody';
 import { Text, View } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/hooks/useAuth';
@@ -82,7 +83,7 @@ export default function MyGroupsScreen() {
       await setSoloPreference(false);
       await setPreferredGroupId(g.group_id);
       await refreshOnboarding();
-      router.replace('/(tabs)');
+      router.push('/(app)/overview');
     } catch {
       setBanner('Não foi possível entrar neste grupo. Tente novamente.');
     } finally {
@@ -93,8 +94,8 @@ export default function MyGroupsScreen() {
   const listBusy = refreshing || phase === 'loading';
 
   return (
-    <>
-      <View style={styles.container}>
+    <ScreenBody style={styles.container}>
+      <View style={styles.inner}>
         <Text style={styles.title}>Escolha um grupo</Text>
         <Text style={styles.sub}>
           Toque para abrir as contas neste espaço compartilhado. Use sempre que já pertencer a um grupo
@@ -108,12 +109,7 @@ export default function MyGroupsScreen() {
         ) : null}
 
         {!uid ? (
-          <>
-            <Text style={styles.empty}>Faça login para ver os seus grupos.</Text>
-            <View style={styles.footerSpacer}>
-              <PrimaryButton label="Voltar" disabled={busyId !== null} onPress={() => router.back()} />
-            </View>
-          </>
+          <Text style={styles.empty}>Faça login para ver os seus grupos.</Text>
         ) : (
           <FlatList
             data={items}
@@ -141,15 +137,6 @@ export default function MyGroupsScreen() {
                   </Text>
                 )
               ) : null
-            }
-            ListFooterComponent={
-              <View style={styles.footerSpacer}>
-                <PrimaryButton
-                  label="Voltar"
-                  disabled={busyId !== null || refreshing}
-                  onPress={() => router.back()}
-                />
-              </View>
             }
             renderItem={({ item }) => {
               const roleLabel = item.role === 'owner' ? 'Administrador' : 'Membro';
@@ -183,12 +170,15 @@ export default function MyGroupsScreen() {
           />
         )}
       </View>
-    </>
+    </ScreenBody>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  inner: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 16,
@@ -237,8 +227,5 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     opacity: 0.8,
     marginTop: 8,
-  },
-  footerSpacer: {
-    marginTop: 28,
   },
 });

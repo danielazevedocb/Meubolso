@@ -13,22 +13,20 @@ import {
   type ListRenderItemInfo,
 } from 'react-native';
 
-import { HeaderBackButton } from '@react-navigation/elements';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { MemberMonthCard } from '@/components/MemberMonthCard';
 import { DuplicateBillsModal } from '@/components/DuplicateBillsModal';
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { ScreenBody } from '@/components/ScreenBody';
 import { Text, View } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useSolidStackHeader } from '@/hooks/useSolidStackHeader';
 import { useDuplicateMonthImport } from '@/hooks/useDuplicateMonthImport';
 import { useGroupPresence } from '@/hooks/useGroupPresence';
 import { useMonthOverview } from '@/hooks/useMonthOverview';
 import { formatMonthHeadingPt } from '@/lib/month-key';
-import { getSoloPreference, setSoloPreference } from '@/lib/onboarding-preference';
 import type { MemberMonthSnapshot } from '@/types/finance';
 
 const money = new Intl.NumberFormat('pt-BR', {
@@ -36,21 +34,13 @@ const money = new Intl.NumberFormat('pt-BR', {
   currency: 'BRL',
 });
 
-export default function HomeScreen() {
-  const { profile, user, signOut, refreshOnboarding, openOnboardingChooser } = useAuth();
+export default function OverviewScreen() {
+  const { profile, user, signOut } = useAuth();
   const scheme = useColorScheme() ?? 'light';
   const palette = Colors[scheme];
 
   const selfName =
     profile?.display_name?.trim() || user?.email?.split('@')[0] || 'Você';
-
-  const [soloModeFromPrefs, setSoloModeFromPrefs] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      void getSoloPreference().then((solo) => setSoloModeFromPrefs(solo));
-    }, []),
-  );
 
   const {
     monthLabel,
@@ -139,53 +129,6 @@ export default function HomeScreen() {
   }, []);
 
   const monthTitle = formatMonthHeadingPt(monthLabel);
-  const handleHomeBackToOnboarding = useCallback(async () => {
-    try {
-      if (context?.mode === 'solo') {
-        await setSoloPreference(false);
-        await refreshOnboarding();
-      } else {
-        await openOnboardingChooser();
-        // RootGate precisa de um paint com `reopenOnboarding` antes do replace passar no guard.
-        await new Promise<void>((resolve) => {
-          requestAnimationFrame(() => resolve());
-        });
-      }
-      router.replace('/(onboarding)');
-    } catch {
-      Alert.alert(
-        'Não foi possível voltar',
-        'Tente novamente ou encerre a sessão e entre de novo.',
-      );
-    }
-  }, [context?.mode, refreshOnboarding, openOnboardingChooser]);
-
-  /** Solo ou grupo: seta no header como no onboarding — volta para escolher modo / grupo. */
-  const showHomeBackButton = useMemo(() => {
-    if (context?.mode === 'group') return true;
-    return context?.mode === 'solo' || soloModeFromPrefs;
-  }, [context?.mode, soloModeFromPrefs]);
-
-  useSolidStackHeader(
-    showHomeBackButton
-      ? {
-          headerLeft: (headerProps) => (
-            <HeaderBackButton
-              {...headerProps}
-              displayMode="minimal"
-              tintColor={palette.text}
-              accessibilityLabel={
-                context?.mode === 'group'
-                  ? 'Voltar para escolher grupo ou modo de uso'
-                  : 'Voltar para escolher modo de uso'
-              }
-              onPress={() => void handleHomeBackToOnboarding()}
-            />
-          ),
-        }
-      : { headerLeft: undefined },
-    [showHomeBackButton, palette.text, handleHomeBackToOnboarding, context?.mode],
-  );
 
   const groupBillsTotal = useMemo(
     () => members.reduce((acc, m) => acc + m.billsTotal, 0),
@@ -209,7 +152,7 @@ export default function HomeScreen() {
         isOnline={onlineUserIds.has(m.userId)}
         onPress={() =>
           router.push({
-            pathname: '/(tabs)/contas',
+            pathname: '/(app)/contas',
             params: { monthLabel, memberUserId: m.userId },
           })
         }
@@ -450,7 +393,7 @@ export default function HomeScreen() {
           disabled={readOnlyMonth}
           onPress={() =>
             router.push({
-              pathname: '/(tabs)/contas',
+              pathname: '/(app)/contas',
               params: { monthLabel, memberUserId: user?.id ?? '' },
             })
           }
@@ -468,7 +411,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <View style={styles.root}>
+    <ScreenBody testID="overview-screen" style={styles.root}>
       <FlatList
         data={memberListData}
         keyExtractor={(m) => m.userId}
@@ -492,7 +435,7 @@ export default function HomeScreen() {
         onClose={duplicateImport.closeModal}
         onConfirm={() => void duplicateImport.submitDuplicate()}
       />
-    </View>
+    </ScreenBody>
   );
 }
 

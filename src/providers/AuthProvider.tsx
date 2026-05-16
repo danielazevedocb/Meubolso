@@ -1,12 +1,12 @@
 import type { Session, User } from '@supabase/supabase-js';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { router } from 'expo-router';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { supabase } from '@/lib/supabase';
 import { setPreferredGroupId } from '@/lib/active-group-preference';
-import { getSoloPreference, setSoloPreference } from '@/lib/onboarding-preference';
+import { setSoloPreference } from '@/lib/onboarding-preference';
 import type { ProfileRow } from '@/types/database.types';
 import {
-  countUserGroupMemberships,
   ensureSelfProfile,
   fetchProfile,
 } from '@/services/groups';
@@ -17,18 +17,14 @@ type AuthContextValue = {
   /** `getSession` finished at least once. */
   initialized: boolean;
   /**
-   * When logged in: profile + onboarding rules loaded.
+   * When logged in: profile loaded.
    * When logged out: true right after auth init (safe to redirect to auth stack).
    */
   routingReady: boolean;
   profile: ProfileRow | null;
-  onboardingComplete: boolean;
-  /** True quando o utilizador pediu o ecrã inicial (onboarding) com sessão já configurada. */
-  reopenOnboarding: boolean;
   refreshProfile: () => Promise<void>;
+  /** Mantido para compatibilidade após escolher grupo/solo (sem gate de onboarding). */
   refreshOnboarding: () => Promise<void>;
-  /** Reabre o stack (onboarding) sem desligar sessão — ex.: seta na Visão geral em grupo. */
-  openOnboardingChooser: () => Promise<void>;
   confirmSoloMode: () => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -40,24 +36,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [initialized, setInitialized] = useState(false);
   const [routingReady, setRoutingReady] = useState(false);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
-  const [onboardingComplete, setOnboardingComplete] = useState(false);
-  /** Quando true, o root stack mostra (onboarding) mesmo com grupo/solo já configurado. */
-  const [reopenOnboarding, setReopenOnboarding] = useState(false);
 
   const user = session?.user ?? null;
+  const hubNavigationDoneRef = useRef(false);
+  const lastSessionUserIdRef = useRef<string | null>(null);
 
-  const hydrateProfileAndOnboarding = useCallback(async (authUser: User) => {
+  const hydrateProfile = useCallback(async (authUser: User) => {
     let profileRow = await fetchProfile(authUser.id);
     if (!profileRow) {
       await ensureSelfProfile(authUser);
       profileRow = await fetchProfile(authUser.id);
     }
-    const [solo, memberCount] = await Promise.all([
-      getSoloPreference(),
-      countUserGroupMemberships(authUser.id),
-    ]);
     setProfile((profileRow ?? null) as ProfileRow | null);
-    setOnboardingComplete(solo || memberCount > 0);
   }, []);
 
   useEffect(() => {
@@ -89,18 +79,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function sync() {
       if (!user?.id) {
         setProfile(null);
-        setOnboardingComplete(false);
         setRoutingReady(true);
+        hubNavigationDoneRef.current = false;
+        lastSessionUserIdRef.current = null;
         return;
       }
 
       setRoutingReady(false);
       try {
-        await hydrateProfileAndOnboarding(user);
-      } catch {
-        if (!cancelled) {
-          setOnboardingComplete(false);
-        }
+        await hydrateProfile(user);
       } finally {
         if (!cancelled) setRoutingReady(true);
       }
@@ -111,7 +98,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [initialized, user?.id, hydrateProfileAndOnboarding]);
+  }, [initialized, user, hydrateProfile]);
+
+  useEffect(() => {
+    if (!initialized || !routingReady || !user?.id) return;
+
+    const isNewSession = lastSessionUserIdRef.current !== user.id;
+    lastSessionUserIdRef.current = user.id;
+
+    if (!hubNavigationDoneRef.current || isNewSession) {
+      hubNavigationDoneRef.current = true;
+      router.replace('/(app)');
+    }
+  }, [initialized, routingReady, user?.id]);
 
   const refreshProfile = useCallback(async () => {
     if (!user) {
@@ -127,31 +126,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const refreshOnboarding = useCallback(async () => {
-    if (!user?.id) return;
-    const [solo, memberCount] = await Promise.all([
-      getSoloPreference(),
-      countUserGroupMemberships(user.id),
-    ]);
-    setOnboardingComplete(solo || memberCount > 0);
-    setReopenOnboarding(false);
-  }, [user?.id]);
-
-  const openOnboardingChooser = useCallback(async () => {
-    setReopenOnboarding(true);
+    /* Gate removido; chamadas após grupo/solo permanecem sem efeito no routing. */
   }, []);
 
   const confirmSoloMode = useCallback(async () => {
     await setSoloPreference(true);
-    await refreshOnboarding();
-  }, [refreshOnboarding]);
+  }, []);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     await setSoloPreference(false);
     await setPreferredGroupId(null);
     setProfile(null);
-    setOnboardingComplete(false);
-    setReopenOnboarding(false);
+    hubNavigationDoneRef.current = false;
+    lastSessionUserIdRef.current = null;
   }, []);
 
   const value = useMemo<AuthContextValue>(
@@ -161,11 +149,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       initialized,
       routingReady,
       profile,
-      onboardingComplete,
-      reopenOnboarding,
       refreshProfile,
       refreshOnboarding,
-      openOnboardingChooser,
       confirmSoloMode,
       signOut,
     }),
@@ -175,11 +160,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       initialized,
       routingReady,
       profile,
-      onboardingComplete,
-      reopenOnboarding,
       refreshProfile,
       refreshOnboarding,
-      openOnboardingChooser,
       confirmSoloMode,
       signOut,
     ],

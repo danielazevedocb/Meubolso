@@ -6,6 +6,7 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { MeubolsoWordmark } from '@/components/MeubolsoWordmark';
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { ScreenBody } from '@/components/ScreenBody';
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -16,7 +17,7 @@ function enterDown(delay: number) {
   return FadeInDown.duration(ENTER_DURATION).delay(delay);
 }
 
-export default function OnboardingHomeScreen() {
+export default function HubScreen() {
   const { confirmSoloMode } = useAuth();
   const [busy, setBusy] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
@@ -26,7 +27,7 @@ export default function OnboardingHomeScreen() {
     setBusy(true);
     try {
       await confirmSoloMode();
-      router.replace('/(tabs)');
+      router.push('/(app)/overview');
     } catch {
       setBanner('Não foi possível salvar a preferência. Tente de novo.');
     } finally {
@@ -35,7 +36,7 @@ export default function OnboardingHomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenBody style={styles.container}>
       <Animated.View entering={enterDown(0)}>
         <View
           style={styles.titleRow}
@@ -50,8 +51,8 @@ export default function OnboardingHomeScreen() {
       </Animated.View>
       <Animated.View entering={enterDown(STAGGER_MS)}>
         <Text style={styles.sub}>
-          Escolha criar um grupo, entrar com código, rever os grupos em que já participa ou usar no modo solo
-          (sem grupo).
+          Escolha criar um grupo, entrar com código, rever os grupos em que já participa ou usar só para você
+          (Eu solo).
         </Text>
       </Animated.View>
 
@@ -65,37 +66,41 @@ export default function OnboardingHomeScreen() {
 
       <Animated.View entering={enterDown(STAGGER_MS * 2)}>
         <PrimaryButton
+          testID="hub-create-group"
           label="Criar um grupo"
           disabled={busy}
-          onPress={() => router.push('/(onboarding)/create-group')}
+          onPress={() => router.push('/(app)/create-group')}
         />
       </Animated.View>
       <View style={styles.spacer} />
       <Animated.View entering={enterDown(STAGGER_MS * 3)}>
         <PrimaryButton
+          testID="hub-join-code"
           label="Entrar com código de convite"
           disabled={busy}
-          onPress={() => router.push('/(onboarding)/join-group')}
+          onPress={() => router.push('/(app)/join-group')}
         />
       </Animated.View>
       <View style={styles.spacer} />
       <Animated.View entering={enterDown(STAGGER_MS * 4)}>
         <PrimaryButton
+          testID="hub-my-groups"
           label="Meus grupos"
           disabled={busy}
-          onPress={() => router.push('/(onboarding)/my-groups')}
+          onPress={() => router.push('/(app)/my-groups')}
         />
       </Animated.View>
       <View style={styles.spacer} />
       <Animated.View entering={enterDown(STAGGER_MS * 5)}>
         <PrimaryButton
-          label="Usar solo (sem grupo)"
+          testID="hub-solo"
+          label="Eu (solo)"
           loading={busy}
           disabled={busy}
           onPress={() => void handleSolo()}
         />
       </Animated.View>
-    </View>
+    </ScreenBody>
   );
 }
 

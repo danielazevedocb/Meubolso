@@ -1,5 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -12,7 +12,6 @@ import {
   Switch,
   View as RNView,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BillEditorModal } from '@/components/BillEditorModal';
 import { DuplicateBillsModal } from '@/components/DuplicateBillsModal';
@@ -27,6 +26,7 @@ import { useContasScreen } from '@/hooks/useContasScreen';
 import { useDuplicateMonthImport } from '@/hooks/useDuplicateMonthImport';
 import { useGroupPresence } from '@/hooks/useGroupPresence';
 import { useKeyboardScrollPadding } from '@/hooks/useKeyboardScrollPadding';
+import { useSolidStackHeader } from '@/hooks/useSolidStackHeader';
 import { formatMonthHeadingPt } from '@/lib/month-key';
 import type { BillRow } from '@/types/finance';
 
@@ -149,7 +149,6 @@ export default function ContasScreen() {
   const { profile, user } = useAuth();
   const scheme = useColorScheme() ?? 'light';
   const palette = Colors[scheme];
-  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ monthLabel?: string; memberUserId?: string }>();
 
   const selfName =
@@ -357,6 +356,49 @@ export default function ContasScreen() {
   const showImportMenu =
     status === 'success' && !readOnlyMonth && duplicateImport.canOfferImport && activeBillCount > 0;
 
+  useSolidStackHeader(
+    {
+      headerRight: () => (
+        <RNView style={styles.headerActions}>
+          {showImportMenu ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Importar contas do mês anterior"
+              hitSlop={12}
+              onPress={() => duplicateImport.requestImport(true)}
+              style={({ pressed }) => [styles.headerIconBtn, { opacity: pressed ? 0.55 : 1 }]}>
+              <FontAwesome name="ellipsis-v" size={20} color={palette.tint} />
+            </Pressable>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Adicionar conta"
+            hitSlop={12}
+            disabled={status !== 'success' || !memberUserId || readOnlyMonth}
+            onPress={openNew}
+            style={({ pressed }) => [
+              styles.headerIconBtn,
+              {
+                opacity:
+                  pressed || status !== 'success' || !memberUserId || readOnlyMonth ? 0.4 : 1,
+              },
+            ]}>
+            <FontAwesome name="plus" size={22} color={palette.tint} />
+          </Pressable>
+        </RNView>
+      ),
+    },
+    [
+      showImportMenu,
+      status,
+      memberUserId,
+      readOnlyMonth,
+      palette.tint,
+      duplicateImport,
+      openNew,
+    ],
+  );
+
   const listFooter = useMemo(
     () => (
       <RNView style={styles.footer}>
@@ -457,50 +499,9 @@ export default function ContasScreen() {
     ],
   );
 
-  const topChrome = (
+  const contentChrome = (
     <>
-      <RNView style={[styles.topBar, { borderBottomColor: palette.borderSubtle }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-          hitSlop={12}
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.55 : 1 }]}>
-          <FontAwesome name="chevron-left" size={22} color={palette.text} />
-        </Pressable>
-        <RNView style={styles.topTitles}>
-          <Text style={[styles.topKicker, { color: palette.tint }]}>Contas do mês</Text>
-          <Text style={[styles.screenTitle, { color: palette.text }]}>Contas</Text>
-          <Text style={[styles.subTitle, { color: palette.caption }]}>{monthHeading}</Text>
-        </RNView>
-        <RNView style={styles.topBarTrail}>
-          {showImportMenu ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Importar contas do mês anterior"
-              hitSlop={12}
-              onPress={() => duplicateImport.requestImport(true)}
-              style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.55 : 1 }]}>
-              <FontAwesome name="ellipsis-v" size={20} color={palette.tint} />
-            </Pressable>
-          ) : null}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Adicionar conta"
-            hitSlop={12}
-            disabled={status !== 'success' || !memberUserId || readOnlyMonth}
-            onPress={openNew}
-            style={({ pressed }) => [
-              styles.backBtn,
-              {
-                opacity:
-                  pressed || status !== 'success' || !memberUserId || readOnlyMonth ? 0.4 : 1,
-              },
-            ]}>
-            <FontAwesome name="plus" size={22} color={palette.tint} />
-          </Pressable>
-        </RNView>
-      </RNView>
+      <Text style={[styles.monthHeading, { color: palette.caption }]}>{monthHeading}</Text>
 
       {readOnlyMonth && status === 'success' ? (
         <View
@@ -586,13 +587,11 @@ export default function ContasScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: palette.background }]} edges={['top']}>
-      <Stack.Screen options={{ headerShown: false }} />
+    <RNView style={[styles.safe, { backgroundColor: palette.background }]}>
       <KeyboardAvoidingView
         style={styles.keyboardFlex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}>
-        {topChrome}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {contentChrome}
 
         {status === 'loading' || status === 'idle' ? (
           <View style={styles.centered}>
@@ -676,7 +675,7 @@ export default function ContasScreen() {
         onClose={duplicateImport.closeModal}
         onConfirm={() => void duplicateImport.submitDuplicate()}
       />
-    </SafeAreaView>
+    </RNView>
   );
 }
 
@@ -690,34 +689,24 @@ const styles = StyleSheet.create({
   keyboardFlex: {
     flex: 1,
   },
-  topBar: {
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginRight: 8,
+    gap: 4,
   },
-  backBtn: {
+  headerIconBtn: {
     minWidth: 44,
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  topTitles: {
-    flex: 1,
-    gap: 2,
-  },
-  topKicker: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  topBarTrail: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
+  monthHeading: {
+    fontSize: 15,
+    fontWeight: '600',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
   dupBanner: {
     marginBottom: 12,
@@ -746,15 +735,6 @@ const styles = StyleSheet.create({
   dupDismissText: {
     fontSize: 15,
     fontWeight: '600',
-  },
-  screenTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  subTitle: {
-    fontSize: 14,
-    marginTop: 2,
   },
   errBanner: {
     marginHorizontal: 16,

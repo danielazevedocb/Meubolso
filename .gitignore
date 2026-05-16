@@ -34,6 +34,13 @@ yarn-error.*
 .env
 .env*.local
 
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+.playwright-mcp/
+
 # typescript
 *.tsbuildinfo
 

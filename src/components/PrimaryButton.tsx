@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, type PressableProps } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { Text } from '@/components/Themed';
@@ -12,6 +12,7 @@ type Props = {
   onPress: () => void | Promise<void>;
   disabled?: boolean;
   loading?: boolean;
+  testID?: PressableProps['testID'];
 };
 
 /** Dark theme uses white tint for primary actions — label must be dark for contrast. */
@@ -44,7 +45,7 @@ function shellElevation(scheme: 'light' | 'dark') {
 
 const pressSpring = { damping: 18, stiffness: 420, mass: 0.35 };
 
-export function PrimaryButton({ label, onPress, disabled, loading }: Props) {
+export function PrimaryButton({ label, onPress, disabled, loading, testID }: Props) {
   const scheme = useColorScheme() ?? 'light';
   const tint = Colors[scheme].tint;
   const labelColor = labelColorForTint(tint);
@@ -68,6 +69,7 @@ export function PrimaryButton({ label, onPress, disabled, loading }: Props) {
   return (
     <Animated.View style={[styles.buttonShell, shellElevation(scheme), shellStyle]}>
       <Pressable
+        testID={testID}
         accessibilityRole="button"
         accessibilityState={{ disabled: !!disabled || loading }}
         accessibilityLabel={label}

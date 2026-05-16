@@ -52,7 +52,7 @@ function RootGate() {
   const colorScheme = useColorScheme();
   const scheme: AppColorScheme = colorScheme === 'dark' ? 'dark' : 'light';
   const navigationTheme = buildNavigationTheme(scheme);
-  const { session, initialized, routingReady, onboardingComplete, reopenOnboarding } = useAuth();
+  const { session, initialized, routingReady } = useAuth();
 
   const splashMayHide = initialized && (!session || routingReady);
 
@@ -69,9 +69,7 @@ function RootGate() {
   }
 
   const gatedAuth = !session;
-  /** Grupo: `onboardingComplete` fica true com membros — `reopenOnboarding` força o stack inicial. */
-  const gatedOnboarding = Boolean(session && (!onboardingComplete || reopenOnboarding));
-  const gatedApp = Boolean(session && onboardingComplete && !reopenOnboarding);
+  const gatedApp = Boolean(session);
 
   const statusBarBg = statusBarBackgroundColor(scheme);
   const barStyle = statusBarStyle(scheme);
@@ -88,12 +86,8 @@ function RootGate() {
             <Stack.Screen name="(auth)" />
           </Stack.Protected>
 
-          <Stack.Protected guard={gatedOnboarding}>
-            <Stack.Screen name="(onboarding)" />
-          </Stack.Protected>
-
           <Stack.Protected guard={gatedApp}>
-            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="(app)" />
             <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
           </Stack.Protected>
         </Stack>

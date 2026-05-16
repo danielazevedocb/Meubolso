@@ -84,7 +84,7 @@ export default function JoinGroupScreen() {
       await setPreferredGroupId(groupId);
       await setSoloPreference(false);
       await refreshOnboarding();
-      router.replace('/(tabs)');
+      router.push('/(app)/overview');
     } catch (e) {
       setBanner(mapPostgrestOrRpcError(e as Error));
     }

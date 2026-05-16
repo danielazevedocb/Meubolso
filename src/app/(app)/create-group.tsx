@@ -55,7 +55,7 @@ export default function CreateGroupScreen() {
       Alert.alert(
         'Grupo criado',
         `Compartilhe o código ${inviteCode}. O grupo aceita até 6 pessoas no total.`,
-        [{ text: 'Ir para início', onPress: () => router.replace('/(tabs)') }],
+        [{ text: 'Ir para visão geral', onPress: () => router.push('/(app)/overview') }],
       );
     } catch (e) {
       setBanner(mapPostgrestOrRpcError(e as Error));
