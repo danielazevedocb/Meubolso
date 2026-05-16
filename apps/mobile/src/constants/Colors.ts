@@ -8,6 +8,11 @@ export default {
     tint: tintColorLight,
     tabIconDefault: '#ccc',
     tabIconSelected: tintColorLight,
+    surfaceSubtle: '#f5f5f7',
+    borderSubtle: 'rgba(0,0,0,0.08)',
+    balancePositive: '#1b5e20',
+    balanceNegative: '#b71c1c',
+    caption: 'rgba(0,0,0,0.55)',
   },
   dark: {
     text: '#fff',
@@ -15,5 +20,10 @@ export default {
     tint: tintColorDark,
     tabIconDefault: '#ccc',
     tabIconSelected: tintColorDark,
+    surfaceSubtle: '#2c2c2e',
+    borderSubtle: 'rgba(255,255,255,0.12)',
+    balancePositive: '#81c784',
+    balanceNegative: '#ef9a9a',
+    caption: 'rgba(255,255,255,0.55)',
   },
 };

@@ -30,7 +30,7 @@ export default function TabLayout() {
         <Tabs.Screen
         name="index"
         options={{
-          title: 'Início',
+          title: 'Visão geral',
           tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
           headerRight: () => (
             <Link href="/modal" asChild>
@@ -46,6 +46,13 @@ export default function TabLayout() {
               </Pressable>
             </Link>
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="add-account"
+        options={{
+          href: null,
+          title: 'Nova conta',
         }}
       />
       <Tabs.Screen
