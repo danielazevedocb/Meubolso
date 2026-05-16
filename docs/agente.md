@@ -23,7 +23,7 @@ Documento de referência para agentes e desenvolvedores: contexto do produto, re
 | `security.md` | Sempre | Zero trust; RLS no Supabase; não expor secrets no client; SecureStore quando fizer sentido; validação no servidor. |
 | `01-backend-geral.mdc` | Backend / API | Camadas, validação, erros — útil para **Edge Functions**, RPC ou qualquer BFF; no Meubolso o “backend” é sobretudo **Supabase + policies**. |
 | `01-python-geral.mdc` | Código Python | Só se o repo passar a usar scripts/serviços em Python. |
-| `02-react-native-expo.mdc` | Globs `app/`, `src/`, `components/`, etc. | **Mobile Expo:** estrutura, performance, rede, env, auth persistência. |
+| `02-react-native-expo.mdc` | Globs `src/app/`, `src/`, etc. | **Mobile Expo:** estrutura, performance, rede, env, auth persistência. |
 | `02-expo-router-stack.mdc` | Idem | **Expo Router:** layouts, grupos `(auth)`, modais, params tipados/Zod, gating centralizado. |
 | `03-expo-data-state-forms.mdc` | Idem | **Dados:** React Query / Zustand, RHF + Zod, services, offline/rede. |
 | `04-expo-quality-testing-observability.mdc` | App + testes | Lint, Jest + Testing Library, E2E (ex.: Detox), a11y RN, observabilidade. |

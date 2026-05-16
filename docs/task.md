@@ -45,10 +45,10 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 
 | Tarefa | Status |
 |--------|--------|
-| Integrar Supabase Auth (e-mail/senha) no app | concluído — `app/(auth)/sign-in.tsx`, `(auth)/sign-up.tsx`, cliente `src/lib/supabase.ts` |
+| Integrar Supabase Auth (e-mail/senha) no app | concluído — `src/app/(auth)/sign-in.tsx`, `(auth)/sign-up.tsx`, cliente `src/lib/supabase.ts` |
 | Fluxo de cadastro e login com validação (Zod/RHF conforme regras) | concluído — `react-hook-form` + `zod` + schemas em `src/forms/auth-group-schemas.ts` |
 | Sessão persistente segura (ex.: SecureStore onde aplicável) | concluído — persistência oficial com AsyncStorage (`supabase.ts`); avaliar SecureStore numa revisão posterior de modelo de tokens |
-| Gating de rotas Expo Router (onboarding autenticado vs. convidado) | concluído — `Stack.Protected` + `AuthProvider` em `app/_layout.tsx`; fluxos `(auth)` / `(onboarding)` / `(tabs)` |
+| Gating de rotas Expo Router (onboarding autenticado vs. convidado) | concluído — `Stack.Protected` + `AuthProvider` em `src/app/_layout.tsx`; fluxos `(auth)` / `(onboarding)` / `(tabs)` |
 | Exibir identidade do usuário (nome/avatar quando houver) | concluído — nome na home (`profiles.display_name`); avatar quando campo existir (UI placeholder futura) |
 
 ---
@@ -66,9 +66,9 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 
 | Tarefa | Status |
 |--------|--------|
-| Onboarding: criar grupo / entrar com código / usar solo | concluído — `app/(onboarding)/` + RPC `join_group_by_invite` / pref. solo AsyncStorage `@meubolso/pref_solo_mode` |
-| Tela principal: mês atual, navegação entre meses, cards por membro | concluído — `app/(tabs)/index.tsx`, serviço `src/services/dashboard.ts`, mês `YYYY-MM` + setas; cria linha em `months` se faltar |
-| Tela de contas por membro: lista, totais, salário, nota do mês | concluído — `app/(tabs)/contas.tsx` + serviços `bills` / `month-settings` |
+| Onboarding: criar grupo / entrar com código / usar solo | concluído — `src/app/(onboarding)/` + RPC `join_group_by_invite` / pref. solo AsyncStorage `@meubolso/pref_solo_mode` |
+| Tela principal: mês atual, navegação entre meses, cards por membro | concluído — `src/app/(tabs)/index.tsx`, serviço `src/services/dashboard.ts`, mês `YYYY-MM` + setas; cria linha em `months` se faltar |
+| Tela de contas por membro: lista, totais, salário, nota do mês | concluído — `src/app/(tabs)/contas.tsx` + serviços `bills` / `month-settings` |
 | Adicionar/editar conta (modal/tela) + confirmação ao editar conta de outro membro | concluído — `BillEditorModal` + aviso RLS em edição alheia |
 | Marcar pago/pendente, excluir com confirmação | concluído — toggle otimista + soft-delete `deleted_at` + `Alert` |
 | Indicador “membro online” (Realtime/presence conforme design) | concluído — `useGroupPresence`: canal `group-presence:{groupId}`, presence key = `userId`; indicador nos cards da home e chips em Contas |

@@ -2,7 +2,7 @@
 
 Cliente **FinançasPessoal**: Expo Router + Supabase. Código em TypeScript.
 
-**Layout do repositório:** app Expo na raiz (`app/`, `src/`, `package.json`); `docs/` e `supabase/` são pastas irmãs (sem npm workspaces).
+**Layout do repositório:** app Expo na raiz (`src/app/` rotas Expo Router, demais código em `src/`, `package.json`); `docs/` e `supabase/` são pastas irmãs (sem npm workspaces).
 
 ## Pré-requisitos
 
