@@ -1,10 +1,12 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router, useLocalSearchParams } from 'expo-router';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Keyboard,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -13,7 +15,7 @@ import {
   View as RNView,
   type ListRenderItemInfo,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BillEditorModal } from '@/components/BillEditorModal';
 import { DuplicateBillsModal } from '@/components/DuplicateBillsModal';
@@ -149,6 +151,7 @@ export default function ContasScreen() {
   const { profile, user } = useAuth();
   const scheme = useColorScheme() ?? 'light';
   const palette = Colors[scheme];
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ monthLabel?: string; memberUserId?: string }>();
 
   const selfName =
@@ -221,6 +224,29 @@ export default function ContasScreen() {
   const [salaryInput, setSalaryInput] = useState('');
   const [monthNoteInput, setMonthNoteInput] = useState('');
   const [monthMetaSaving, setMonthMetaSaving] = useState(false);
+  const [keyboardPad, setKeyboardPad] = useState(0);
+  const listRef = useRef<FlatList<BillRow>>(null);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardPad(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardPad(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const scrollFooterInputsIntoView = useCallback(() => {
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToEnd({ animated: true });
+    });
+  }, []);
 
   useEffect(
     () => {
@@ -427,6 +453,7 @@ export default function ContasScreen() {
           editable={!!monthRow && status === 'success' && !readOnlyMonth}
           hint="Mesmo valor usado na visão geral para o saldo."
           containerStyle={styles.fieldGap}
+          onFocus={scrollFooterInputsIntoView}
         />
         <FormTextField
           label="Nota do mês (opcional)"
@@ -436,6 +463,7 @@ export default function ContasScreen() {
           editable={!!monthRow && status === 'success' && !readOnlyMonth}
           hint="Ex.: pagar com cartão de crédito."
           containerStyle={styles.fieldGap}
+          onFocus={scrollFooterInputsIntoView}
         />
         <PrimaryButton
           label="Salvar salário e nota do mês"
@@ -462,6 +490,7 @@ export default function ContasScreen() {
       readOnlyMonth,
       salaryInput,
       saveMonthMeta,
+      scrollFooterInputsIntoView,
       status,
     ],
   );
@@ -605,21 +634,34 @@ export default function ContasScreen() {
       ) : null}
 
       {status === 'success' ? (
-        <FlatList
-          data={bills}
-          keyExtractor={(b) => b.id}
-          renderItem={renderBill}
-          ListHeaderComponent={listHeader ?? undefined}
-          ListEmptyComponent={
-            <Text style={[styles.empty, { color: palette.caption }]}>
-              {readOnlyMonth
-                ? `Nenhuma conta neste mês para ${activeMemberName}.`
-                : `Nenhuma conta neste mês para ${activeMemberName}. Toque em + para adicionar.`}
-            </Text>
-          }
-          ListFooterComponent={listFooter}
-          contentContainerStyle={styles.listContent}
-        />
+        <KeyboardAvoidingView
+          style={styles.keyboardArea}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 64 : 0}>
+          <FlatList
+            ref={listRef}
+            data={bills}
+            keyExtractor={(b) => b.id}
+            renderItem={renderBill}
+            ListHeaderComponent={listHeader ?? undefined}
+            ListEmptyComponent={
+              <Text style={[styles.empty, { color: palette.caption }]}>
+                {readOnlyMonth
+                  ? `Nenhuma conta neste mês para ${activeMemberName}.`
+                  : `Nenhuma conta neste mês para ${activeMemberName}. Toque em + para adicionar.`}
+              </Text>
+            }
+            ListFooterComponent={listFooter}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            contentContainerStyle={[
+              styles.listContent,
+              {
+                paddingBottom: (keyboardPad > 0 ? keyboardPad + 28 : 32) + insets.bottom,
+              },
+            ]}
+          />
+        </KeyboardAvoidingView>
       ) : null}
 
       <BillEditorModal
@@ -655,6 +697,9 @@ export default function ContasScreen() {
 
 const styles = StyleSheet.create({
   safe: {
+    flex: 1,
+  },
+  keyboardArea: {
     flex: 1,
   },
   topBar: {

@@ -69,6 +69,22 @@ export default function HomeScreen() {
     selfDisplayName: selfName,
   });
 
+  const skipNextHomeOverviewRefetch = useRef(true);
+  useEffect(() => {
+    skipNextHomeOverviewRefetch.current = true;
+  }, [user?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.id) return;
+      if (skipNextHomeOverviewRefetch.current) {
+        skipNextHomeOverviewRefetch.current = false;
+        return;
+      }
+      void reload();
+    }, [reload, user?.id]),
+  );
+
   const duplicateImport = useDuplicateMonthImport({
     context,
     members: members.map((m) => ({ userId: m.userId, displayName: m.displayName })),
