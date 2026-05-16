@@ -126,3 +126,19 @@ export async function createGroup(input: { name: string; creatorId: string }): P
 
   throw new Error('Não foi possível gerar um código de convite único. Tente novamente.');
 }
+
+/** Código de convite atual do grupo (membros: RLS `groups_select_members`). */
+export async function fetchGroupInviteCode(groupId: string): Promise<string> {
+  const { data, error } = await supabase
+    .from('groups')
+    .select('invite_code')
+    .eq('id', groupId)
+    .maybeSingle();
+
+  if (error) throw error;
+  const code = typeof data?.invite_code === 'string' ? data.invite_code.trim() : '';
+  if (!code) {
+    throw new Error('Código de convite indisponível.');
+  }
+  return code;
+}

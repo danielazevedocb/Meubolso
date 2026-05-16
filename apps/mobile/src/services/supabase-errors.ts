@@ -1,5 +1,14 @@
 import type { AuthError, PostgrestError } from '@supabase/supabase-js';
 
+/** PT-BR copy when `groups.invite_code` collides (create group flow). */
+export const MESSAGE_GROUP_INVITE_CODE_ALREADY_USED =
+  'Código de convite já em uso. Toque em criar de novo para gerar outro.';
+
+/** Postgres UNIQUE violation — used for idempotent inserts (e.g. `months`). */
+export function isPostgresUniqueViolation(error: unknown): error is PostgrestError {
+  return typeof error === 'object' && error !== null && (error as PostgrestError).code === '23505';
+}
+
 /** User-facing copy for common Supabase Auth errors (PT-BR). */
 export function mapAuthError(error: AuthError | null | undefined): string {
   if (!error?.message) return 'Não foi possível concluir o acesso. Tente novamente.';
@@ -33,18 +42,24 @@ export function mapPostgrestOrRpcError(
     return 'Sua sessão expirou. Entre novamente.';
   }
 
-  if (
-    raw.includes('duplicate key value') ||
-    raw.includes('groups_invite_code_uidx') ||
-    raw.toLowerCase().includes('unique constraint')
-  ) {
-    if (
-      raw.includes('bills_group_company_uidx') ||
-      raw.includes('bills_solo_company_uidx')
-    ) {
+  const rawLower = raw.toLowerCase();
+  if (raw.includes('duplicate key value') || rawLower.includes('unique constraint')) {
+    if (raw.includes('bills_group_company_uidx') || raw.includes('bills_solo_company_uidx')) {
       return 'Já existe uma conta com essa descrição neste mês. Ajuste o nome ou edite a existente.';
     }
-    return 'Código de convite já em uso. Toque em criar de novo para gerar outro.';
+    if (raw.includes('groups_invite_code_uidx')) {
+      return MESSAGE_GROUP_INVITE_CODE_ALREADY_USED;
+    }
+    if (raw.includes('months_group_uidx') || raw.includes('months_solo_uidx')) {
+      return 'Os dados deste mês já estão registrados. Puxe para atualizar ou escolha outro mês.';
+    }
+    if (
+      raw.includes('group_members_unique_member') ||
+      raw.includes('group_members_one_owner_uidx')
+    ) {
+      return 'Esta entrada no grupo já existe. Atualize a tela ou faça login de novo.';
+    }
+    return 'Não foi possível sincronizar (conflito de dados duplicados). Tente novamente.';
   }
 
   if (
@@ -56,4 +71,19 @@ export function mapPostgrestOrRpcError(
   }
 
   return raw;
+}
+
+/** Month overview/home: avoids showing invite *creation* copy unless DB cites that constraint. */
+export function mapFinanceOverviewError(
+  error: PostgrestError | Error | null | undefined,
+): string {
+  const raw = error?.message ?? '';
+  const mapped = mapPostgrestOrRpcError(error);
+  if (
+    mapped === MESSAGE_GROUP_INVITE_CODE_ALREADY_USED &&
+    !raw.includes('groups_invite_code_uidx')
+  ) {
+    return 'Não foi possível carregar os dados deste período. Puxe para atualizar ou tente de novo.';
+  }
+  return mapped;
 }

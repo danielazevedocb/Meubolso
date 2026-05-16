@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { currentMonthKeyNow, isReadOnlyMonth, shiftMonthKey } from '@/lib/month-key';
 import { loadMonthOverview } from '@/services/dashboard';
-import { mapPostgrestOrRpcError } from '@/services/supabase-errors';
+import { mapFinanceOverviewError } from '@/services/supabase-errors';
 import type { FinanceContext, MemberMonthSnapshot } from '@/types/finance';
 
 type Status = 'loading' | 'success' | 'error' | 'idle';
@@ -48,7 +48,7 @@ export function useMonthOverview(input: {
       setPreviousMonthBillCount(result.previousMonthBillCount);
       setStatus('success');
     } catch (e) {
-      setErrorMessage(mapPostgrestOrRpcError(e as Error));
+      setErrorMessage(mapFinanceOverviewError(e as Error));
       setStatus('error');
     }
   }, [input.userId, input.selfDisplayName, monthLabel]);

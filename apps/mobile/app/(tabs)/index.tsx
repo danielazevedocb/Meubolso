@@ -1,6 +1,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -92,6 +93,34 @@ export default function HomeScreen() {
     userId: user?.id,
     enabled: presenceEnabled,
   });
+
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const copyResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const groupInviteCode = context?.mode === 'group' ? context.inviteCode : undefined;
+
+  const handleCopyGroupInvite = useCallback(async () => {
+    if (!groupInviteCode) return;
+    try {
+      await Clipboard.setStringAsync(groupInviteCode);
+      setInviteCopied(true);
+      if (copyResetRef.current) clearTimeout(copyResetRef.current);
+      copyResetRef.current = setTimeout(() => {
+        setInviteCopied(false);
+        copyResetRef.current = null;
+      }, 2000);
+    } catch {
+      Alert.alert('Não foi possível copiar', 'Tente novamente ou selecione o código manualmente.');
+    }
+  }, [groupInviteCode]);
+
+  useEffect(() => {
+    return () => {
+      if (copyResetRef.current) {
+        clearTimeout(copyResetRef.current);
+      }
+    };
+  }, []);
 
   const monthTitle = formatMonthHeadingPt(monthLabel);
   const handleHomeBackToOnboarding = useCallback(async () => {
@@ -297,6 +326,60 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
+        {context?.mode === 'group' && status === 'success' ? (
+          <View
+            style={[
+              styles.inviteSection,
+              {
+                borderColor: palette.borderSubtle,
+                backgroundColor: palette.surfaceSubtle,
+              },
+            ]}
+            accessibilityLabel="Código de convite do grupo">
+            <Text style={[styles.inviteLabel, { color: palette.caption }]}>Código de convite</Text>
+            {!groupInviteCode ? (
+              <RNView style={styles.inviteErrorBlock}>
+                <Text style={[styles.inviteErrorText, { color: palette.caption }]}>
+                  Não foi possível carregar o código de convite.
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Atualizar código de convite"
+                  onPress={() => void reload()}
+                  style={({ pressed }) => [styles.inviteRetry, { opacity: pressed ? 0.7 : 1 }]}>
+                  <Text style={[styles.inviteRetryText, { color: palette.tint }]}>Atualizar</Text>
+                </Pressable>
+              </RNView>
+            ) : (
+              <RNView style={styles.inviteCodeRow}>
+                <Text
+                  style={[styles.inviteCodeText, { color: palette.text }]}
+                  selectable
+                  accessibilityLabel={`Código de convite ${groupInviteCode}`}>
+                  {groupInviteCode}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    inviteCopied ? 'Código copiado' : 'Copiar código de convite'
+                  }
+                  onPress={() => void handleCopyGroupInvite()}
+                  style={({ pressed }) => [
+                    styles.inviteCopyBtn,
+                    {
+                      borderColor: palette.tint,
+                      opacity: pressed ? 0.75 : 1,
+                    },
+                  ]}>
+                  <Text style={[styles.inviteCopyBtnLabel, { color: palette.tint }]}>
+                    {inviteCopied ? 'Copiado' : 'Copiar'}
+                  </Text>
+                </Pressable>
+              </RNView>
+            )}
+          </View>
+        ) : null}
+
         {members.length > 1 && status === 'success' ? (
           <Text style={[styles.aggregate, { color: palette.caption }]}>
             Soma das contas no mês:{' '}
@@ -331,6 +414,9 @@ export default function HomeScreen() {
       goNextMonth,
       goPrevMonth,
       groupBillsTotal,
+      groupInviteCode,
+      handleCopyGroupInvite,
+      inviteCopied,
       members.length,
       monthTitle,
       palette.borderSubtle,
@@ -522,6 +608,67 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '500',
+  },
+  inviteSection: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    padding: 12,
+    gap: 8,
+    marginTop: 2,
+  },
+  inviteLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  inviteErrorText: {
+    fontSize: 13,
+    lineHeight: 18,
+    flex: 1,
+  },
+  inviteErrorBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  inviteRetry: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  inviteRetryText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  inviteCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  inviteCodeText: {
+    flex: 1,
+    flexBasis: 120,
+    minWidth: 0,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    fontFamily: Platform.select({
+      ios: 'Menlo',
+      android: 'monospace',
+      default: 'monospace',
+    }),
+  },
+  inviteCopyBtn: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  inviteCopyBtnLabel: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   aggregate: {
     fontSize: 14,

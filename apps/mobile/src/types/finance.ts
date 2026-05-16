@@ -1,4 +1,6 @@
-export type FinanceContext = { mode: 'solo' } | { mode: 'group'; groupId: string };
+export type FinanceContext =
+  | { mode: 'solo' }
+  | { mode: 'group'; groupId: string; inviteCode?: string };
 
 export type MemberRef = {
   userId: string;

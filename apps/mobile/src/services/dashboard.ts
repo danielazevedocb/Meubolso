@@ -2,6 +2,8 @@ import { getPreferredGroupId } from '@/lib/active-group-preference';
 import { supabase } from '@/lib/supabase';
 import { getSoloPreference } from '@/lib/onboarding-preference';
 import { assertMonthLabel, shiftMonthKey } from '@/lib/month-key';
+import { isPostgresUniqueViolation } from '@/services/supabase-errors';
+import { fetchGroupInviteCode } from '@/services/groups';
 import type { FinanceContext, MemberMonthSnapshot, MemberRef } from '@/types/finance';
 
 type MonthRow = {
@@ -114,7 +116,12 @@ async function ensureMonthRows(
             };
 
       const { error: insErr } = await supabase.from('months').insert(insert);
-      if (insErr) throw insErr;
+      if (!insErr) return;
+      if (isPostgresUniqueViolation(insErr)) {
+        /** Concurrent load / Strict Mode → row already inserted. */
+        return;
+      }
+      throw insErr;
     }),
   );
 }
@@ -204,7 +211,15 @@ export async function loadMonthOverview(input: {
   previousMonthBillCount: number;
 }> {
   const monthLabel = assertMonthLabel(input.monthLabel);
-  const ctx = await resolveFinanceContext(input.userId);
+  let ctx = await resolveFinanceContext(input.userId);
+  if (ctx.mode === 'group') {
+    try {
+      const inviteCode = await fetchGroupInviteCode(ctx.groupId);
+      ctx = { mode: 'group', groupId: ctx.groupId, inviteCode };
+    } catch {
+      ctx = { mode: 'group', groupId: ctx.groupId };
+    }
+  }
   const members = await fetchMembersForContext(ctx, input.userId, input.selfDisplayName);
   const memberIds = members.map((m) => m.userId);
 
