@@ -14,7 +14,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { Text, View } from '@/components/Themed';
 import type { CreateGroupValues } from '@/forms/auth-group-schemas';
 import { createGroupSchema } from '@/forms/auth-group-schemas';
-import { createGroup } from '@/services/groups';
+import { createGroup, ensureSelfProfile } from '@/services/groups';
 import { mapPostgrestOrRpcError } from '@/services/supabase-errors';
 import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
@@ -39,6 +39,7 @@ export default function CreateGroupScreen() {
     }
     setBanner(null);
     try {
+      await ensureSelfProfile(user);
       const { inviteCode } = await createGroup({ name: values.name, creatorId: user.id });
       await refreshOnboarding();
       Alert.alert(

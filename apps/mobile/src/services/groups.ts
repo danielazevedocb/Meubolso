@@ -68,7 +68,6 @@ const INSERT_CONFLICT_CODE = '23505';
 const MAX_INVITE_RETRIES = 5;
 
 export async function createGroup(input: { name: string; creatorId: string }): Promise<{
-  groupId: string;
   inviteCode: string;
 }> {
   const trimmed = input.name.trim();
@@ -76,18 +75,16 @@ export async function createGroup(input: { name: string; creatorId: string }): P
   for (let attempt = 0; attempt < MAX_INVITE_RETRIES; attempt++) {
     const inviteCode = generateInviteCode();
 
-    const { data, error } = await supabase
-      .from('groups')
-      .insert({
-        name: trimmed,
-        invite_code: inviteCode,
-        created_by: input.creatorId,
-      })
-      .select('id')
-      .single();
+    // Omit `.insert().select()` so PostgREST does not force `return=representation` SELECT on
+    // `groups`; that path can fail against `groups_select_members` until the owner membership row exists.
+    const { error } = await supabase.from('groups').insert({
+      name: trimmed,
+      invite_code: inviteCode,
+      created_by: input.creatorId,
+    });
 
-    if (!error && data) {
-      return { groupId: data.id, inviteCode };
+    if (!error) {
+      return { inviteCode };
     }
 
     if (error?.code === INSERT_CONFLICT_CODE) {
