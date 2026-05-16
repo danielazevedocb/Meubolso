@@ -1,23 +1,18 @@
 import 'react-native-url-polyfill/auto';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { SupportedStorage } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-function assertSupabaseEnv(): { url: string; key: string } {
-  if (!supabaseUrl?.trim() || !supabaseKey?.trim()) {
-    throw new Error(
-      'Supabase não configurado: defina EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_ANON_KEY (copie src/.env.example para src/.env e preencha com os valores do Dashboard).',
-    );
-  }
-  return { url: supabaseUrl.trim(), key: supabaseKey.trim() };
-}
+export const SUPABASE_CONFIG_ERROR =
+  'Supabase não configurado: defina EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_ANON_KEY (EAS Secrets ou .env na raiz).';
 
-const { url, key } = assertSupabaseEnv();
+/** `false` em builds EAS sem secrets — evita crash nativo na abertura. */
+export const isSupabaseConfigured = Boolean(supabaseUrl?.trim() && supabaseKey?.trim());
 
 /**
  * Web/SSR: o bundle pode correr em Node (sem `window`). AsyncStorage RN usa `window` no web e rebenta.
@@ -66,15 +61,40 @@ function createWebAuthStorage(): SupportedStorage {
 const authStorage: SupportedStorage =
   Platform.OS === 'web' ? createWebAuthStorage() : AsyncStorage;
 
+let client: SupabaseClient | null = null;
+
+function createSupabaseClient(): SupabaseClient {
+  if (!isSupabaseConfigured) {
+    throw new Error(SUPABASE_CONFIG_ERROR);
+  }
+  return createClient(supabaseUrl!.trim(), supabaseKey!.trim(), {
+    auth: {
+      storage: authStorage,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+    },
+  });
+}
+
+export function getSupabase(): SupabaseClient {
+  if (!client) {
+    client = createSupabaseClient();
+  }
+  return client;
+}
+
 /**
- * Cliente Supabase para o app (chave publicável no bundle — proteção via RLS no projeto).
- * Persistência: AsyncStorage no iOS/Android; web usa localStorage (e memória só durante SSR).
+ * Cliente Supabase (chave publicável no bundle — proteção via RLS no projeto).
+ * Só acesse após `isSupabaseConfigured` ou use `getSupabase()`.
  */
-export const supabase = createClient(url, key, {
-  auth: {
-    storage: authStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
+export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    const resolved = getSupabase();
+    const value = Reflect.get(resolved, prop, resolved) as unknown;
+    if (typeof value === 'function') {
+      return (value as (...args: unknown[]) => unknown).bind(resolved);
+    }
+    return value;
   },
 });

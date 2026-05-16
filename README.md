@@ -124,7 +124,14 @@ O repositório inclui `eas.json` com perfis `development`, `preview` e `producti
 
 3. Defina **bundle identifier** (iOS) e **application id** (Android) antes da primeira loja — via `app.json` / `app.config.js` ou variáveis no perfil EAS, conforme [EAS Build](https://docs.expo.dev/build/introduction/).
 
-4. Exemplos de build:
+4. **Obrigatório antes do build:** no [expo.dev](https://expo.dev) → projeto → **Environment variables**, crie (escopo adequado ao perfil, ex. `preview` e `production`):
+
+   - `EXPO_PUBLIC_SUPABASE_URL`
+   - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+
+   Use os mesmos valores do `.env` local. Sem isso, o APK antigo fechava na abertura; builds novos mostram tela de configuração até você refazer o build com as variáveis.
+
+5. Exemplos de build:
 
    ```bash
    npm run eas:build -- --profile preview --platform android
@@ -140,7 +147,7 @@ Para experimentação sem EAS: `npx expo run:android` / `npx expo run:ios` ([doc
 ## Release (checklist)
 
 1. **Versão**
-   - Builds **production** incrementam automaticamente `version`, `android.versionCode` e `ios.buildNumber` via EAS (`appVersionSource: remote`, `autoIncrement: version` em `eas.json`). Não é necessário editar números antes de cada publicação.
+   - Builds **production** incrementam automaticamente `android.versionCode` e `ios.buildNumber` via EAS (`appVersionSource: remote`, `autoIncrement: true` em `eas.json`). Ajuste `expo.version` em `app.json` quando quiser mudar a versão visível (ex.: 1.0.0 → 1.1.0), ou use `npx eas-cli build:version:sync` após o build.
    - Perfis `preview` e `development` não incrementam versão (APKs de teste).
    - Opcional: após um build production, sincronizar o `app.json` local com `npx eas-cli build:version:sync`.
 

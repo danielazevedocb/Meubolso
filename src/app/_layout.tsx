@@ -1,5 +1,3 @@
-import '@/lib/supabase';
-
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -12,6 +10,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import 'react-native-reanimated';
 
+import { SupabaseConfigMissing } from '@/components/SupabaseConfigMissing';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -39,6 +39,10 @@ export default function RootLayout() {
 
   if (!loaded) {
     return null;
+  }
+
+  if (!isSupabaseConfigured) {
+    return <SupabaseConfigMissing />;
   }
 
   return (
