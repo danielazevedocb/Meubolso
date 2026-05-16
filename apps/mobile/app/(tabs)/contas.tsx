@@ -1,11 +1,9 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { router, useLocalSearchParams } from 'expo-router';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
-  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,7 +11,6 @@ import {
   StyleSheet,
   Switch,
   View as RNView,
-  type ListRenderItemInfo,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -29,6 +26,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContasScreen } from '@/hooks/useContasScreen';
 import { useDuplicateMonthImport } from '@/hooks/useDuplicateMonthImport';
 import { useGroupPresence } from '@/hooks/useGroupPresence';
+import { useKeyboardScrollPadding } from '@/hooks/useKeyboardScrollPadding';
 import { formatMonthHeadingPt } from '@/lib/month-key';
 import type { BillRow } from '@/types/finance';
 
@@ -219,34 +217,13 @@ export default function ContasScreen() {
   const balanceColor = balance < 0 ? palette.balanceNegative : palette.balancePositive;
   const isGroup = context?.mode === 'group';
 
+  const { scrollRef, contentPaddingBottom, scrollToEndOnFocus } = useKeyboardScrollPadding();
+
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingBill, setEditingBill] = useState<BillRow | null>(null);
   const [salaryInput, setSalaryInput] = useState('');
   const [monthNoteInput, setMonthNoteInput] = useState('');
   const [monthMetaSaving, setMonthMetaSaving] = useState(false);
-  const [keyboardPad, setKeyboardPad] = useState(0);
-  const listRef = useRef<FlatList<BillRow>>(null);
-
-  useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const showSub = Keyboard.addListener(showEvent, (e) => {
-      setKeyboardPad(e.endCoordinates.height);
-    });
-    const hideSub = Keyboard.addListener(hideEvent, () => {
-      setKeyboardPad(0);
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
-
-  const scrollFooterInputsIntoView = useCallback(() => {
-    requestAnimationFrame(() => {
-      listRef.current?.scrollToEnd({ animated: true });
-    });
-  }, []);
 
   useEffect(
     () => {
@@ -319,21 +296,6 @@ export default function ContasScreen() {
   const handleTogglePaid = useCallback(
     (billId: string, nextPaid: boolean) => void setPaidOptimistic(billId, nextPaid),
     [setPaidOptimistic],
-  );
-
-  const renderBill = useCallback(
-    ({ item }: ListRenderItemInfo<BillRow>) => (
-      <ContasBillCard
-        bill={item}
-        palette={palette}
-        readOnlyMonth={readOnlyMonth}
-        selfUserId={user?.id}
-        onTogglePaid={handleTogglePaid}
-        onEdit={openEdit}
-        onConfirmDelete={confirmDelete}
-      />
-    ),
-    [confirmDelete, handleTogglePaid, openEdit, palette, readOnlyMonth, user?.id],
   );
 
   const {
@@ -453,7 +415,7 @@ export default function ContasScreen() {
           editable={!!monthRow && status === 'success' && !readOnlyMonth}
           hint="Mesmo valor usado na visão geral para o saldo."
           containerStyle={styles.fieldGap}
-          onFocus={scrollFooterInputsIntoView}
+          onFocus={scrollToEndOnFocus}
         />
         <FormTextField
           label="Nota do mês (opcional)"
@@ -463,7 +425,7 @@ export default function ContasScreen() {
           editable={!!monthRow && status === 'success' && !readOnlyMonth}
           hint="Ex.: pagar com cartão de crédito."
           containerStyle={styles.fieldGap}
-          onFocus={scrollFooterInputsIntoView}
+          onFocus={scrollToEndOnFocus}
         />
         <PrimaryButton
           label="Salvar salário e nota do mês"
@@ -490,13 +452,13 @@ export default function ContasScreen() {
       readOnlyMonth,
       salaryInput,
       saveMonthMeta,
-      scrollFooterInputsIntoView,
+      scrollToEndOnFocus,
       status,
     ],
   );
 
-  return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: palette.background }]} edges={['top']}>
+  const topChrome = (
+    <>
       <RNView style={[styles.topBar, { borderBottomColor: palette.borderSubtle }]}>
         <Pressable
           accessibilityRole="button"
@@ -573,6 +535,7 @@ export default function ContasScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.memberChips}>
             {members.map((m) => {
               const sel = m.userId === memberUserId;
@@ -601,9 +564,7 @@ export default function ContasScreen() {
                         style={[styles.presenceDot, { backgroundColor: palette.balancePositive }]}
                       />
                     ) : null}
-                    <Text
-                      suppressHighlighting
-                      style={[styles.memberChipText, { color: palette.text }]}>
+                    <Text suppressHighlighting style={[styles.memberChipText, { color: palette.text }]}>
                       {m.displayName}
                     </Text>
                   </RNView>
@@ -621,52 +582,72 @@ export default function ContasScreen() {
           <Text style={[styles.singleMemberHint, { color: palette.caption }]}>{activeMemberName}</Text>
         </RNView>
       )}
+    </>
+  );
 
-      {status === 'loading' || status === 'idle' ? (
-        <View style={styles.centered}>
-          <ActivityIndicator color={palette.tint} size="large" />
-          <Text style={[styles.loadingHint, { color: palette.caption }]}>Carregando contas…</Text>
-        </View>
-      ) : null}
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: palette.background }]} edges={['top']}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <KeyboardAvoidingView
+        style={styles.keyboardFlex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}>
+        {topChrome}
 
-      {status === 'error' ? (
-        <View style={styles.centered}>
-          <Text style={styles.errTitle}>Não foi possível carregar as contas</Text>
-          {errorMessage ? <Text style={styles.errBody}>{errorMessage}</Text> : null}
-          <PrimaryButton label="Voltar" onPress={() => router.back()} />
-        </View>
-      ) : null}
+        {status === 'loading' || status === 'idle' ? (
+          <View style={styles.centered}>
+            <ActivityIndicator color={palette.tint} size="large" />
+            <Text style={[styles.loadingHint, { color: palette.caption }]}>Carregando contas…</Text>
+          </View>
+        ) : null}
 
-      {status === 'success' ? (
-        <KeyboardAvoidingView
-          style={styles.keyboardArea}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 64 : 0}>
-          <FlatList
-            ref={listRef}
-            data={bills}
-            keyExtractor={(b) => b.id}
-            renderItem={renderBill}
-            ListHeaderComponent={listHeader ?? undefined}
-            ListEmptyComponent={
+        {status === 'error' ? (
+          <View style={styles.centered}>
+            <Text style={styles.errTitle}>Não foi possível carregar as contas</Text>
+            {errorMessage ? <Text style={styles.errBody}>{errorMessage}</Text> : null}
+            <PrimaryButton label="Voltar" onPress={() => router.back()} />
+          </View>
+        ) : null}
+
+        {status === 'success' ? (
+          <ScrollView
+            ref={scrollRef}
+            style={styles.keyboardArea}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+            automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+            contentContainerStyle={[
+              styles.listContent,
+              {
+                flexGrow: 1,
+                paddingBottom: contentPaddingBottom,
+              },
+            ]}>
+            {listHeader}
+            {bills.length === 0 ? (
               <Text style={[styles.empty, { color: palette.caption }]}>
                 {readOnlyMonth
                   ? `Nenhuma conta neste mês para ${activeMemberName}.`
                   : `Nenhuma conta neste mês para ${activeMemberName}. Toque em + para adicionar.`}
               </Text>
-            }
-            ListFooterComponent={listFooter}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            contentContainerStyle={[
-              styles.listContent,
-              {
-                paddingBottom: (keyboardPad > 0 ? keyboardPad + 28 : 32) + insets.bottom,
-              },
-            ]}
-          />
-        </KeyboardAvoidingView>
-      ) : null}
+            ) : (
+              bills.map((bill) => (
+                <ContasBillCard
+                  key={bill.id}
+                  bill={bill}
+                  palette={palette}
+                  readOnlyMonth={readOnlyMonth}
+                  selfUserId={user?.id}
+                  onTogglePaid={handleTogglePaid}
+                  onEdit={openEdit}
+                  onConfirmDelete={confirmDelete}
+                />
+              ))
+            )}
+            {listFooter}
+          </ScrollView>
+        ) : null}
+      </KeyboardAvoidingView>
 
       <BillEditorModal
         visible={editorOpen}
@@ -704,6 +685,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   keyboardArea: {
+    flex: 1,
+  },
+  keyboardFlex: {
     flex: 1,
   },
   topBar: {

@@ -58,6 +58,8 @@ export default function TabLayout() {
         options={{
           href: null,
           title: 'Contas',
+          /** Cabeçalho in-screen (voltar + título); evita barra duplicada do Tabs. */
+          headerShown: false,
           /** Tela em modo “folha”; utilizador volta pela seta. */
           tabBarStyle: { display: 'none' },
         }}

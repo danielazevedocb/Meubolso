@@ -1,5 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { useState } from 'react';
+import { forwardRef, useState } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -23,16 +23,19 @@ type Props = {
   passwordToggle?: boolean;
 } & TextInputProps;
 
-export function FormTextField({
-  label,
-  errorText,
-  containerStyle,
-  hint,
-  style,
-  passwordToggle,
-  secureTextEntry,
-  ...inputProps
-}: Props) {
+export const FormTextField = forwardRef<TextInput, Props>(function FormTextField(
+  {
+    label,
+    errorText,
+    containerStyle,
+    hint,
+    style,
+    passwordToggle,
+    secureTextEntry,
+    ...inputProps
+  },
+  ref,
+) {
   const scheme = useColorScheme() ?? 'light';
   const [passwordHidden, setPasswordHidden] = useState(true);
 
@@ -73,6 +76,7 @@ export function FormTextField({
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       <View style={styles.inputRow}>
         <TextInput
+          ref={ref}
           {...inputProps}
           secureTextEntry={effectiveSecure}
           style={inputStyles}
@@ -102,7 +106,7 @@ export function FormTextField({
       ) : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   label: {

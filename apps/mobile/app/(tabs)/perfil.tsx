@@ -1,5 +1,6 @@
 import type { AuthError, PostgrestError } from '@supabase/supabase-js';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
@@ -10,8 +11,6 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 import { FormTextField } from '@/components/FormTextField';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Text, View } from '@/components/Themed';
@@ -24,11 +23,12 @@ import {
 } from '@/forms/profile-schemas';
 import { useAuth } from '@/hooks/useAuth';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useKeyboardScrollPadding } from '@/hooks/useKeyboardScrollPadding';
 import { updateOwnPassword, updateOwnProfileDisplayName } from '@/services/profile';
 import { mapAuthError, mapPostgrestOrRpcError } from '@/services/supabase-errors';
 
 export default function PerfilScreen() {
-  const insets = useSafeAreaInsets();
+  const navHeaderHeight = useHeaderHeight();
   const scheme = useColorScheme() ?? 'light';
   const palette = Colors[scheme];
   const { profile, user, refreshProfile } = useAuth();
@@ -102,19 +102,24 @@ export default function PerfilScreen() {
     }
   });
 
+  const { scrollRef, contentPaddingBottom, scrollToEndOnFocus } = useKeyboardScrollPadding();
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}>
+      keyboardVerticalOffset={Platform.OS === 'ios' ? navHeaderHeight : 0}>
       <ScrollView
+        ref={scrollRef}
+        style={styles.flex}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
         contentContainerStyle={[
           styles.scroll,
           {
             paddingTop: 12,
-            paddingBottom: Math.max(insets.bottom, 28),
+            paddingBottom: contentPaddingBottom,
           },
         ]}>
         <Text style={[styles.lead, { color: palette.caption }]}>
@@ -181,6 +186,7 @@ export default function PerfilScreen() {
               textContentType="password"
               value={value}
               onBlur={onBlur}
+              onFocus={scrollToEndOnFocus}
               onChangeText={onChange}
               containerStyle={styles.field}
               errorText={pwdForm.formState.errors.currentPassword?.message}
@@ -201,6 +207,7 @@ export default function PerfilScreen() {
               textContentType="newPassword"
               value={value}
               onBlur={onBlur}
+              onFocus={scrollToEndOnFocus}
               onChangeText={onChange}
               containerStyle={styles.field}
               errorText={pwdForm.formState.errors.newPassword?.message}
@@ -222,6 +229,7 @@ export default function PerfilScreen() {
               textContentType="newPassword"
               value={value}
               onBlur={onBlur}
+              onFocus={scrollToEndOnFocus}
               onChangeText={onChange}
               containerStyle={styles.field}
               errorText={pwdForm.formState.errors.confirmNewPassword?.message}
