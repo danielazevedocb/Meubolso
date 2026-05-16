@@ -21,8 +21,8 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 | Tarefa | Status |
 |--------|--------|
 | Configurar monorepo/app Expo (SDK, TypeScript, ESLint/Prettier) | concluído |
-| Configurar variáveis de ambiente (ex.: `EXPO_PUBLIC_SUPABASE_*`) sem commitar secrets | pendente |
-| Conectar repositório a projeto Supabase (projeto dev/staging) | pendente |
+| Configurar variáveis de ambiente (ex.: `EXPO_PUBLIC_SUPABASE_*`) sem commitar secrets | concluído |
+| Conectar repositório a projeto Supabase (projeto dev/staging) | concluído — cliente (`apps/mobile/src/lib/supabase.ts`) + `.env.example`; preencher `.env` local com URL/chave do Dashboard |
 | Documentar setup local em README (sem secrets) | pendente |
 
 ---
