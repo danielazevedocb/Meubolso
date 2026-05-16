@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
@@ -19,7 +20,12 @@ type Props = {
   isOnline?: boolean;
 };
 
-export function MemberMonthCard({ snapshot, onPress, showOnlineIndicator, isOnline }: Props) {
+export const MemberMonthCard = memo(function MemberMonthCard({
+  snapshot,
+  onPress,
+  showOnlineIndicator,
+  isOnline,
+}: Props) {
   const scheme = useColorScheme() ?? 'light';
   const c = Colors[scheme];
   const balanceColor = snapshot.balance < 0 ? c.balanceNegative : c.balancePositive;
@@ -65,7 +71,7 @@ export function MemberMonthCard({ snapshot, onPress, showOnlineIndicator, isOnli
   }
 
   return card;
-}
+});
 
 const styles = StyleSheet.create({
   card: {

@@ -1,11 +1,14 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
+import { useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   Pressable,
-  ScrollView,
   StyleSheet,
+  View as RNView,
+  type ListRenderItemInfo,
 } from 'react-native';
 
 import { MemberMonthCard } from '@/components/MemberMonthCard';
@@ -19,6 +22,7 @@ import { useDuplicateMonthImport } from '@/hooks/useDuplicateMonthImport';
 import { useGroupPresence } from '@/hooks/useGroupPresence';
 import { useMonthOverview } from '@/hooks/useMonthOverview';
 import { formatMonthHeadingPt } from '@/lib/month-key';
+import type { MemberMonthSnapshot } from '@/types/finance';
 
 const money = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -76,11 +80,40 @@ export default function HomeScreen() {
   });
 
   const monthTitle = formatMonthHeadingPt(monthLabel);
-  const groupBillsTotal = members.reduce((acc, m) => acc + m.billsTotal, 0);
+  const groupBillsTotal = useMemo(
+    () => members.reduce((acc, m) => acc + m.billsTotal, 0),
+    [members],
+  );
 
-  return (
-    <View style={styles.root}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+  const memberListData = status === 'success' ? members : [];
+
+  const presenceListExtra = useMemo(() => {
+    if (!presenceEnabled) return '';
+    return Array.from(onlineUserIds)
+      .sort()
+      .join('|');
+  }, [presenceEnabled, onlineUserIds]);
+
+  const renderMemberItem = useCallback(
+    ({ item: m }: ListRenderItemInfo<MemberMonthSnapshot>) => (
+      <MemberMonthCard
+        snapshot={m}
+        showOnlineIndicator={presenceEnabled}
+        isOnline={onlineUserIds.has(m.userId)}
+        onPress={() =>
+          router.push({
+            pathname: '/(tabs)/contas',
+            params: { monthLabel, memberUserId: m.userId },
+          })
+        }
+      />
+    ),
+    [monthLabel, presenceEnabled, onlineUserIds],
+  );
+
+  const listHeader = useMemo(
+    () => (
+      <>
         <Text style={styles.screenTitle}>Visão geral do mês</Text>
 
         <View style={[styles.monthBar, { borderColor: palette.borderSubtle }]}>
@@ -129,8 +162,10 @@ export default function HomeScreen() {
             </Text>
             <Text style={[styles.dupBannerBody, { color: palette.caption }]}>
               Ninguém tem contas neste mês ainda (lista vazia no banco). Deseja copiar as contas de{' '}
-              <Text style={{ fontWeight: '700' }}>{formatMonthHeadingPt(duplicateImport.sourceMonthLabel)}</Text>?
-              Os salários serão alinhados ao mês anterior; a nota do mês não é copiada.
+              <Text style={{ fontWeight: '700' }}>
+                {formatMonthHeadingPt(duplicateImport.sourceMonthLabel)}
+              </Text>
+              ? Os salários serão alinhados ao mês anterior; a nota do mês não é copiada.
             </Text>
             <View style={styles.dupBannerActions}>
               <PrimaryButton
@@ -181,55 +216,76 @@ export default function HomeScreen() {
             <PrimaryButton label="Tentar novamente" onPress={() => void reload()} />
           </View>
         ) : null}
+      </>
+    ),
+    [
+      context,
+      duplicateImport,
+      errorMessage,
+      goNextMonth,
+      goPrevMonth,
+      groupBillsTotal,
+      members.length,
+      monthTitle,
+      palette.borderSubtle,
+      palette.caption,
+      palette.surfaceSubtle,
+      palette.text,
+      palette.tint,
+      readOnlyMonth,
+      reload,
+      status,
+    ],
+  );
 
-        {status === 'success' && members.length === 0 ? (
-          <Text style={[styles.empty, { color: palette.caption }]}>
-            Nenhum membro encontrado para este contexto. Verifique o grupo ou entre de novo.
-          </Text>
-        ) : null}
+  const listEmpty = useMemo(() => {
+    if (status !== 'success' || members.length > 0) return null;
+    return (
+      <Text style={[styles.empty, { color: palette.caption }]}>
+        Nenhum membro encontrado para este contexto. Verifique o grupo ou entre de novo.
+      </Text>
+    );
+  }, [members.length, palette.caption, status]);
 
-        {status === 'success' && members.length > 0 ? (
-          <View style={styles.cards}>
-            {members.map((m) => (
-              <MemberMonthCard
-                key={m.userId}
-                snapshot={m}
-                showOnlineIndicator={presenceEnabled}
-                isOnline={onlineUserIds.has(m.userId)}
-                onPress={() =>
-                  router.push({
-                    pathname: '/(tabs)/contas',
-                    params: { monthLabel, memberUserId: m.userId },
-                  })
-                }
-              />
-            ))}
-          </View>
-        ) : null}
+  const listFooter = useMemo(
+    () => (
+      <View style={styles.actions}>
+        <PrimaryButton
+          label="Adicionar nova conta"
+          disabled={readOnlyMonth}
+          onPress={() =>
+            router.push({
+              pathname: '/(tabs)/contas',
+              params: { monthLabel, memberUserId: user?.id ?? '' },
+            })
+          }
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Encerrar sessão"
+          onPress={() => void signOut()}
+          style={({ pressed }) => [styles.signOut, { opacity: pressed ? 0.65 : 1 }]}>
+          <Text style={[styles.signOutText, { color: palette.tint }]}>Encerrar sessão</Text>
+        </Pressable>
+      </View>
+    ),
+    [monthLabel, palette.tint, readOnlyMonth, signOut, user?.id],
+  );
 
-        <View style={styles.actions}>
-          <PrimaryButton
-            label="Adicionar nova conta"
-            disabled={readOnlyMonth}
-            onPress={() =>
-              router.push({
-                pathname: '/(tabs)/contas',
-                params: { monthLabel, memberUserId: user?.id ?? '' },
-              })
-            }
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Encerrar sessão"
-            onPress={() => void signOut()}
-            style={({ pressed }) => [
-              styles.signOut,
-              { opacity: pressed ? 0.65 : 1 },
-            ]}>
-            <Text style={[styles.signOutText, { color: palette.tint }]}>Encerrar sessão</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
+  return (
+    <View style={styles.root}>
+      <FlatList
+        data={memberListData}
+        keyExtractor={(m) => m.userId}
+        renderItem={renderMemberItem}
+        ListHeaderComponent={listHeader}
+        ListFooterComponent={listFooter}
+        ListEmptyComponent={listEmpty}
+        ItemSeparatorComponent={MemberRowSeparator}
+        extraData={presenceListExtra}
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      />
 
       <DuplicateBillsModal
         visible={duplicateImport.modalVisible}
@@ -243,6 +299,10 @@ export default function HomeScreen() {
       />
     </View>
   );
+}
+
+function MemberRowSeparator() {
+  return <RNView style={styles.memberRowSep} />;
 }
 
 const styles = StyleSheet.create({
@@ -358,8 +418,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  cards: {
-    gap: 14,
+  memberRowSep: {
+    height: 14,
   },
   actions: {
     gap: 14,
