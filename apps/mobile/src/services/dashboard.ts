@@ -1,3 +1,4 @@
+import { getPreferredGroupId } from '@/lib/active-group-preference';
 import { supabase } from '@/lib/supabase';
 import { getSoloPreference } from '@/lib/onboarding-preference';
 import { assertMonthLabel, shiftMonthKey } from '@/lib/month-key';
@@ -29,17 +30,20 @@ export async function resolveFinanceContext(userId: string): Promise<FinanceCont
   const solo = await getSoloPreference();
   if (solo) return { mode: 'solo' };
 
-  const { data, error } = await supabase
-    .from('group_members')
-    .select('group_id')
-    .eq('user_id', userId)
-    .order('joined_at', { ascending: true })
-    .limit(1);
+  const [{ data: memberRows, error }, preferredId] = await Promise.all([
+    supabase.from('group_members').select('group_id').eq('user_id', userId).order('joined_at', {
+      ascending: true,
+    }),
+    getPreferredGroupId(),
+  ]);
 
   if (error) throw error;
-  const groupId = data?.[0]?.group_id;
-  if (!groupId) return { mode: 'solo' };
-  return { mode: 'group', groupId };
+  const ids = (memberRows ?? []).map((r) => r.group_id as string).filter(Boolean);
+  if (ids.length === 0) return { mode: 'solo' };
+
+  const resolved =
+    preferredId && ids.includes(preferredId) ? preferredId : ids[0]!;
+  return { mode: 'group', groupId: resolved };
 }
 
 async function fetchGroupMembers(groupId: string): Promise<MemberRef[]> {

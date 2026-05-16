@@ -2,6 +2,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { supabase } from '@/lib/supabase';
+import { setPreferredGroupId } from '@/lib/active-group-preference';
 import { getSoloPreference, setSoloPreference } from '@/lib/onboarding-preference';
 import type { ProfileRow } from '@/types/database.types';
 import {
@@ -147,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     await setSoloPreference(false);
+    await setPreferredGroupId(null);
     setProfile(null);
     setOnboardingComplete(false);
     setReopenOnboarding(false);

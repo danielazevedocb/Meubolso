@@ -5,6 +5,36 @@ import type { InviteLookupRow } from '@/types/database.types';
 
 const MAX_MEMBERS_DEFAULT = 6;
 
+export type UserGroupMembership = {
+  group_id: string;
+  role: 'owner' | 'member';
+  joined_at: string;
+  group_name: string;
+};
+
+/** Lista grupos em que o utilizador é membro (nome para UI). */
+export async function fetchUserMembershipGroups(userId: string): Promise<UserGroupMembership[]> {
+  const { data, error } = await supabase
+    .from('group_members')
+    .select('group_id, role, joined_at, groups(name)')
+    .eq('user_id', userId)
+    .order('joined_at', { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => {
+    const g = row.groups as { name: string } | { name: string }[] | null;
+    const nameWrap = Array.isArray(g) ? g[0] : g;
+    const name = nameWrap?.name?.trim() || 'Grupo';
+    return {
+      group_id: row.group_id as string,
+      role: row.role as 'owner' | 'member',
+      joined_at: row.joined_at as string,
+      group_name: name,
+    };
+  });
+}
+
 export async function countUserGroupMemberships(userId: string): Promise<number> {
   const { count, error } = await supabase
     .from('group_members')

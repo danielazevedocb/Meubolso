@@ -14,7 +14,13 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { Text, View } from '@/components/Themed';
 import type { CreateGroupValues } from '@/forms/auth-group-schemas';
 import { createGroupSchema } from '@/forms/auth-group-schemas';
-import { createGroup, ensureSelfProfile } from '@/services/groups';
+import { setPreferredGroupId } from '@/lib/active-group-preference';
+import { setSoloPreference } from '@/lib/onboarding-preference';
+import {
+  createGroup,
+  ensureSelfProfile,
+  lookupInvite,
+} from '@/services/groups';
 import { mapPostgrestOrRpcError } from '@/services/supabase-errors';
 import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
@@ -41,6 +47,10 @@ export default function CreateGroupScreen() {
     try {
       await ensureSelfProfile(user);
       const { inviteCode } = await createGroup({ name: values.name, creatorId: user.id });
+      const rows = await lookupInvite(inviteCode);
+      const gid = rows[0]?.group_id;
+      if (gid) await setPreferredGroupId(gid);
+      await setSoloPreference(false);
       await refreshOnboarding();
       Alert.alert(
         'Grupo criado',

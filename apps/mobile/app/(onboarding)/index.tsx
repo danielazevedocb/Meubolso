@@ -30,8 +30,8 @@ export default function OnboardingHomeScreen() {
       <View style={styles.container}>
         <Text style={styles.title}>Bem-vindo ao Meubolso</Text>
         <Text style={styles.sub}>
-          Escolha criar um grupo compartilhado, entrar com um código de convite ou usar no modo solo
-          (sem grupo).
+          Escolha criar um grupo, entrar com código, rever os grupos em que já participa ou usar no modo
+          solo (sem grupo).
         </Text>
 
         {banner ? (
@@ -50,6 +50,12 @@ export default function OnboardingHomeScreen() {
           label="Entrar com código de convite"
           disabled={busy}
           onPress={() => router.push('/(onboarding)/join-group')}
+        />
+        <View style={styles.spacer} />
+        <PrimaryButton
+          label="Meus grupos"
+          disabled={busy}
+          onPress={() => router.push('/(onboarding)/my-groups')}
         />
         <View style={styles.spacer} />
         <PrimaryButton

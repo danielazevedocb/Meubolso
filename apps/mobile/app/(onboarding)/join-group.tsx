@@ -13,6 +13,8 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { Text, View } from '@/components/Themed';
 import type { JoinInviteValues } from '@/forms/auth-group-schemas';
 import { joinInviteSchema } from '@/forms/auth-group-schemas';
+import { setPreferredGroupId } from '@/lib/active-group-preference';
+import { setSoloPreference } from '@/lib/onboarding-preference';
 import {
   isGroupFull,
   joinGroupByInvite,
@@ -78,7 +80,9 @@ export default function JoinGroupScreen() {
         return;
       }
 
-      await joinGroupByInvite(values.code);
+      const groupId = await joinGroupByInvite(values.code);
+      await setPreferredGroupId(groupId);
+      await setSoloPreference(false);
       await refreshOnboarding();
       router.replace('/(tabs)');
     } catch (e) {
