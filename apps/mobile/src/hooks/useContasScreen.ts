@@ -51,6 +51,8 @@ export function useContasScreen(input: {
   const [monthRow, setMonthRow] = useState<MonthRowFull | null>(null);
   const [billsTotal, setBillsTotal] = useState(0);
   const [balance, setBalance] = useState(0);
+  const [activeBillCount, setActiveBillCount] = useState(0);
+  const [previousMonthBillCount, setPreviousMonthBillCount] = useState(0);
 
   /** Context + member list + pick member from route (or self). */
   useEffect(() => {
@@ -117,6 +119,8 @@ export function useContasScreen(input: {
       const snap = overview.members.find((m) => m.userId === uid);
       setBillsTotal(snap?.billsTotal ?? 0);
       setBalance(snap?.balance ?? 0);
+      setActiveBillCount(overview.activeBillCount);
+      setPreviousMonthBillCount(overview.previousMonthBillCount);
       setStatus('success');
     },
     [input.authUserId, input.selfDisplayName],
@@ -277,6 +281,7 @@ export function useContasScreen(input: {
     balance,
     status,
     errorMessage,
+    setErrorMessage,
     dismissError,
     refreshMemberData,
     setPaidOptimistic,
@@ -284,5 +289,7 @@ export function useContasScreen(input: {
     createBill,
     saveBill,
     saveMonthSalaryNote,
+    activeBillCount,
+    previousMonthBillCount,
   };
 }

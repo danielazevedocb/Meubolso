@@ -73,7 +73,7 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 | Marcar pago/pendente, excluir com confirmação | concluído — toggle otimista + soft-delete `deleted_at` + `Alert` |
 | Indicador “membro online” (Realtime/presence conforme design) | concluído — `useGroupPresence`: canal `group-presence:{groupId}`, presence key = `userId`; indicador nos cards da home e chips em Contas |
 | Meses anteriores somente leitura após regra de negócio (PRD §10 item 3) | concluído — `isReadOnlyMonth` em `month-key.ts`; mês com `YYYY-MM` anterior ao mês corrente bloqueia edição na UI e nas mutations do hook |
-| Duplicar/importar contas do mês anterior (banner, menu, modais, anti-duplicidade) | pendente |
+| Duplicar/importar contas do mês anterior (banner, menu, modais, anti-duplicidade) | concluído |
 | Configurações: perfil, grupo, salário, logout | parcial — salário e nota do mês por membro na tela Contas (`months`); perfil/grupo/logout pendente |
 
 ---
@@ -110,9 +110,9 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 | 6 | Marcar conta como paga | concluído |
 | 7 | Navegar entre meses anteriores | concluído |
 | 8 | Meses anteriores não editáveis | concluído |
-| 9 | Sugestão de copiar contas ao abrir mês vazio | pendente |
-| 10 | Cópia reseta status para pendente | pendente |
-| 11 | Importação não sobrescreve contas existentes (regra PRD) | pendente |
+| 9 | Sugestão de copiar contas ao abrir mês vazio | concluído |
+| 10 | Cópia reseta status para pendente | concluído |
+| 11 | Importação não sobrescreve contas existentes (regra PRD) | concluído |
 | 12 | Escolher mês de origem diferente do imediatamente anterior | pendente |
 
 ---

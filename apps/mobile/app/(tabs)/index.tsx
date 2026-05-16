@@ -2,17 +2,20 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
 } from 'react-native';
 
 import { MemberMonthCard } from '@/components/MemberMonthCard';
+import { DuplicateBillsModal } from '@/components/DuplicateBillsModal';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Text, View } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useDuplicateMonthImport } from '@/hooks/useDuplicateMonthImport';
 import { useGroupPresence } from '@/hooks/useGroupPresence';
 import { useMonthOverview } from '@/hooks/useMonthOverview';
 import { formatMonthHeadingPt } from '@/lib/month-key';
@@ -40,9 +43,27 @@ export default function HomeScreen() {
     reload,
     goPrevMonth,
     goNextMonth,
+    activeBillCount,
+    previousMonthBillCount,
   } = useMonthOverview({
     userId: user?.id,
     selfDisplayName: selfName,
+  });
+
+  const duplicateImport = useDuplicateMonthImport({
+    context,
+    members: members.map((m) => ({ userId: m.userId, displayName: m.displayName })),
+    monthLabel,
+    readOnlyMonth,
+    activeBillCount,
+    previousMonthBillCount,
+    authUserId: user?.id,
+    reloadData: async () => {
+      await reload();
+    },
+    setErrorMessage: (msg) => {
+      if (msg) Alert.alert('Não foi possível preparar a cópia', msg);
+    },
   });
 
   const presenceEnabled =
@@ -93,6 +114,37 @@ export default function HomeScreen() {
             <Text style={[styles.readOnlyBody, { color: palette.caption }]}>
               Meses anteriores podem ser visualizados, mas não editados.
             </Text>
+          </View>
+        ) : null}
+
+        {duplicateImport.showEmptyMonthBanner ? (
+          <View
+            style={[
+              styles.dupBanner,
+              { borderColor: palette.borderSubtle, backgroundColor: palette.surfaceSubtle },
+            ]}
+            accessibilityRole="text">
+            <Text style={[styles.dupBannerTitle, { color: palette.text }]}>
+              Mês sem contas cadastradas
+            </Text>
+            <Text style={[styles.dupBannerBody, { color: palette.caption }]}>
+              Ninguém tem contas neste mês ainda (lista vazia no banco). Deseja copiar as contas de{' '}
+              <Text style={{ fontWeight: '700' }}>{formatMonthHeadingPt(duplicateImport.sourceMonthLabel)}</Text>?
+              Os salários serão alinhados ao mês anterior; a nota do mês não é copiada.
+            </Text>
+            <View style={styles.dupBannerActions}>
+              <PrimaryButton
+                label="Copiar do mês anterior"
+                onPress={() => duplicateImport.requestImport(false)}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Começar do zero"
+                onPress={() => void duplicateImport.dismissBanner()}
+                style={({ pressed }) => [styles.dupDismiss, { opacity: pressed ? 0.65 : 1 }]}>
+                <Text style={[styles.dupDismissText, { color: palette.tint }]}>Começar do zero</Text>
+              </Pressable>
+            </View>
           </View>
         ) : null}
 
@@ -178,6 +230,17 @@ export default function HomeScreen() {
           </Pressable>
         </View>
       </ScrollView>
+
+      <DuplicateBillsModal
+        visible={duplicateImport.modalVisible}
+        preview={duplicateImport.preview}
+        loadingPreview={duplicateImport.loadingPreview}
+        executing={duplicateImport.executing}
+        mergeWarning={duplicateImport.mergeWarning}
+        existingBillCount={activeBillCount}
+        onClose={duplicateImport.closeModal}
+        onConfirm={() => void duplicateImport.submitDuplicate()}
+      />
     </View>
   );
 }
@@ -231,6 +294,33 @@ const styles = StyleSheet.create({
   readOnlyBody: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  dupBanner: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    padding: 14,
+    gap: 10,
+  },
+  dupBannerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  dupBannerBody: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  dupBannerActions: {
+    gap: 10,
+    marginTop: 4,
+  },
+  dupDismiss: {
+    alignSelf: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  dupDismissText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   modeHint: {
     fontSize: 14,

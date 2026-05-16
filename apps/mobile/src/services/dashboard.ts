@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { getSoloPreference } from '@/lib/onboarding-preference';
-import { assertMonthLabel } from '@/lib/month-key';
+import { assertMonthLabel, shiftMonthKey } from '@/lib/month-key';
 import type { FinanceContext, MemberMonthSnapshot, MemberRef } from '@/types/finance';
 
 type MonthRow = {
@@ -134,6 +134,22 @@ async function fetchMonthsTotals(
   return map;
 }
 
+async function fetchActiveBillCount(ctx: FinanceContext, monthLabel: string): Promise<number> {
+  assertMonthLabel(monthLabel);
+  const base = supabase
+    .from('bills')
+    .select('id', { count: 'exact', head: true })
+    .eq('month_label', monthLabel)
+    .is('deleted_at', null);
+
+  const q =
+    ctx.mode === 'solo' ? base.is('group_id', null) : base.eq('group_id', ctx.groupId);
+
+  const { count, error } = await q;
+  if (error) throw error;
+  return count ?? 0;
+}
+
 async function fetchBillsTotalsByUser(
   ctx: FinanceContext,
   monthLabel: string,
@@ -168,7 +184,12 @@ export async function loadMonthOverview(input: {
   userId: string;
   selfDisplayName: string;
   monthLabel: string;
-}): Promise<{ context: FinanceContext; members: MemberMonthSnapshot[] }> {
+}): Promise<{
+  context: FinanceContext;
+  members: MemberMonthSnapshot[];
+  activeBillCount: number;
+  previousMonthBillCount: number;
+}> {
   const monthLabel = assertMonthLabel(input.monthLabel);
   const ctx = await resolveFinanceContext(input.userId);
   const members = await fetchMembersForContext(ctx, input.userId, input.selfDisplayName);
@@ -176,9 +197,13 @@ export async function loadMonthOverview(input: {
 
   await ensureMonthRows(ctx, monthLabel, memberIds);
 
-  const [salaryByUser, billsByUser] = await Promise.all([
+  const duplicateSourceMonthLabel = shiftMonthKey(monthLabel, -1);
+
+  const [salaryByUser, billsByUser, activeBillCount, previousMonthBillCount] = await Promise.all([
     fetchMonthsTotals(ctx, monthLabel, memberIds),
     fetchBillsTotalsByUser(ctx, monthLabel, input.userId),
+    fetchActiveBillCount(ctx, monthLabel),
+    fetchActiveBillCount(ctx, duplicateSourceMonthLabel),
   ]);
 
   const snapshots: MemberMonthSnapshot[] = members.map((m) => {
@@ -194,5 +219,10 @@ export async function loadMonthOverview(input: {
     };
   });
 
-  return { context: ctx, members: snapshots };
+  return {
+    context: ctx,
+    members: snapshots,
+    activeBillCount,
+    previousMonthBillCount,
+  };
 }

@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BillEditorModal } from '@/components/BillEditorModal';
+import { DuplicateBillsModal } from '@/components/DuplicateBillsModal';
 import { FormTextField } from '@/components/FormTextField';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Text, View } from '@/components/Themed';
@@ -21,6 +22,7 @@ import { parseMoneyInput } from '@/forms/bill-form-schema';
 import { useAuth } from '@/hooks/useAuth';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContasScreen } from '@/hooks/useContasScreen';
+import { useDuplicateMonthImport } from '@/hooks/useDuplicateMonthImport';
 import { useGroupPresence } from '@/hooks/useGroupPresence';
 import { formatMonthHeadingPt } from '@/lib/month-key';
 import type { BillRow } from '@/types/finance';
@@ -66,7 +68,27 @@ export default function ContasScreen() {
     createBill,
     saveBill,
     saveMonthSalaryNote,
+    refreshMemberData,
+    activeBillCount,
+    previousMonthBillCount,
+    setErrorMessage,
   } = hook;
+
+  const duplicateImport = useDuplicateMonthImport({
+    context,
+    members,
+    monthLabel,
+    readOnlyMonth,
+    activeBillCount,
+    previousMonthBillCount,
+    authUserId: user?.id,
+    reloadData: async () => {
+      if (context && memberUserId) {
+        await refreshMemberData(context, memberUserId, monthLabel);
+      }
+    },
+    setErrorMessage,
+  });
 
   const presenceEnabled =
     status === 'success' && context?.mode === 'group' && members.length > 1;
@@ -241,6 +263,65 @@ export default function ContasScreen() {
     ],
   );
 
+  const {
+    showEmptyMonthBanner,
+    sourceMonthLabel: duplicateSourceMonthLabel,
+    requestImport: requestDuplicateImport,
+    dismissBanner: dismissDuplicateBanner,
+  } = duplicateImport;
+
+  const listHeader = useMemo(() => {
+    if (status !== 'success' || !showEmptyMonthBanner) return null;
+    const prevHeading = formatMonthHeadingPt(duplicateSourceMonthLabel);
+    return (
+      <View
+        style={[
+          styles.dupBanner,
+          { borderColor: palette.borderSubtle, backgroundColor: palette.surfaceSubtle },
+        ]}
+        accessibilityRole="text">
+        <Text style={[styles.dupBannerTitle, { color: palette.text }]}>
+          Sugestão: copiar contas
+        </Text>
+        <Text style={[styles.dupBannerBody, { color: palette.caption }]}>
+          {!monthRow
+            ? `Sem registro em "months" para ${activeMemberName} neste mês (salário/nota ainda não foram salvos no servidor). `
+            : `Há registro do mês para ${activeMemberName}, mas não há contas cadastradas para ninguém neste mês. `}
+          Deseja copiar de {prevHeading}? Itens com o mesmo nome (por membro) serão ignorados.
+        </Text>
+        <View style={styles.dupBannerActions}>
+          <PrimaryButton
+            label="Copiar do mês anterior"
+            onPress={() => requestDuplicateImport(false)}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Começar do zero"
+            onPress={() => void dismissDuplicateBanner()}
+            style={({ pressed }) => [styles.dupDismiss, { opacity: pressed ? 0.65 : 1 }]}>
+            <Text style={[styles.dupDismissText, { color: palette.tint }]}>Começar do zero</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }, [
+    status,
+    showEmptyMonthBanner,
+    duplicateSourceMonthLabel,
+    requestDuplicateImport,
+    dismissDuplicateBanner,
+    palette.borderSubtle,
+    palette.surfaceSubtle,
+    palette.text,
+    palette.caption,
+    palette.tint,
+    monthRow,
+    activeMemberName,
+  ]);
+
+  const showImportMenu =
+    status === 'success' && !readOnlyMonth && duplicateImport.canOfferImport && activeBillCount > 0;
+
   const listFooter = (
       <View style={styles.footer}>
         <View style={[styles.summary, { borderColor: palette.borderSubtle }]}>
@@ -308,21 +389,33 @@ export default function ContasScreen() {
           <Text style={styles.screenTitle}>Contas</Text>
           <Text style={[styles.subTitle, { color: palette.caption }]}>{monthHeading}</Text>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Adicionar conta"
-          hitSlop={12}
-          disabled={status !== 'success' || !memberUserId || readOnlyMonth}
-          onPress={openNew}
-          style={({ pressed }) => [
-            styles.backBtn,
-            {
-              opacity:
-                pressed || status !== 'success' || !memberUserId || readOnlyMonth ? 0.4 : 1,
-            },
-          ]}>
-          <FontAwesome name="plus" size={20} color={palette.tint} />
-        </Pressable>
+        <View style={styles.topBarTrail}>
+          {showImportMenu ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Importar contas do mês anterior"
+              hitSlop={12}
+              onPress={() => duplicateImport.requestImport(true)}
+              style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.55 : 1 }]}>
+              <FontAwesome name="ellipsis-v" size={20} color={palette.tint} />
+            </Pressable>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Adicionar conta"
+            hitSlop={12}
+            disabled={status !== 'success' || !memberUserId || readOnlyMonth}
+            onPress={openNew}
+            style={({ pressed }) => [
+              styles.backBtn,
+              {
+                opacity:
+                  pressed || status !== 'success' || !memberUserId || readOnlyMonth ? 0.4 : 1,
+              },
+            ]}>
+            <FontAwesome name="plus" size={20} color={palette.tint} />
+          </Pressable>
+        </View>
       </View>
 
       {readOnlyMonth && status === 'success' ? (
@@ -415,6 +508,7 @@ export default function ContasScreen() {
           data={bills}
           keyExtractor={(b) => b.id}
           renderItem={renderBill}
+          ListHeaderComponent={listHeader ?? undefined}
           ListEmptyComponent={
             <Text style={[styles.empty, { color: palette.caption }]}>
               {readOnlyMonth
@@ -443,6 +537,17 @@ export default function ContasScreen() {
         onSubmitCreate={createBill}
         onSubmitUpdate={saveBill}
       />
+
+      <DuplicateBillsModal
+        visible={duplicateImport.modalVisible}
+        preview={duplicateImport.preview}
+        loadingPreview={duplicateImport.loadingPreview}
+        executing={duplicateImport.executing}
+        mergeWarning={duplicateImport.mergeWarning}
+        existingBillCount={activeBillCount}
+        onClose={duplicateImport.closeModal}
+        onConfirm={() => void duplicateImport.submitDuplicate()}
+      />
     </SafeAreaView>
   );
 }
@@ -466,6 +571,39 @@ const styles = StyleSheet.create({
   },
   topTitles: {
     flex: 1,
+  },
+  topBarTrail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  dupBanner: {
+    marginBottom: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    padding: 14,
+    gap: 10,
+  },
+  dupBannerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  dupBannerBody: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  dupBannerActions: {
+    gap: 10,
+    marginTop: 4,
+  },
+  dupDismiss: {
+    alignSelf: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  dupDismissText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   screenTitle: {
     fontSize: 20,

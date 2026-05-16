@@ -12,6 +12,7 @@ type BillRowDb = {
   due_date: string | null;
   paid: boolean;
   note: string | null;
+  copied_from: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -29,6 +30,7 @@ function toBillRow(row: BillRowDb): BillRow {
     due_date: row.due_date,
     paid: row.paid,
     note: row.note,
+    copied_from: row.copied_from ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -43,7 +45,7 @@ export async function fetchBillsForMember(input: {
   const base = supabase
     .from('bills')
     .select(
-      'id, group_id, user_id, month_label, company, amount, due_date, paid, note, created_at, updated_at',
+      'id, group_id, user_id, month_label, company, amount, due_date, paid, note, copied_from, created_at, updated_at',
     )
     .eq('month_label', monthLabel)
     .eq('user_id', input.memberUserId)
@@ -69,8 +71,13 @@ export async function insertBill(input: {
   due_date: string | null;
   paid: boolean;
   note: string | null;
+  copiedFrom?: string | null;
 }): Promise<BillRow> {
   const monthLabel = assertMonthLabel(input.monthLabel);
+  const copiedFrom =
+    input.copiedFrom === undefined || input.copiedFrom === null
+      ? null
+      : assertMonthLabel(input.copiedFrom);
   const row =
     input.ctx.mode === 'solo'
       ? {
@@ -82,6 +89,7 @@ export async function insertBill(input: {
           due_date: input.due_date,
           paid: input.paid,
           note: input.note,
+          copied_from: copiedFrom,
         }
       : {
           group_id: input.ctx.groupId,
@@ -92,6 +100,7 @@ export async function insertBill(input: {
           due_date: input.due_date,
           paid: input.paid,
           note: input.note,
+          copied_from: copiedFrom,
         };
 
   const { data, error } = await supabase.from('bills').insert(row).select().single();

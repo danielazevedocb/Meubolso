@@ -16,11 +16,15 @@ export function useMonthOverview(input: {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [members, setMembers] = useState<MemberMonthSnapshot[]>([]);
   const [context, setContext] = useState<FinanceContext | null>(null);
+  const [activeBillCount, setActiveBillCount] = useState(0);
+  const [previousMonthBillCount, setPreviousMonthBillCount] = useState(0);
 
   const load = useCallback(async () => {
     if (!input.userId) {
       setMembers([]);
       setContext(null);
+      setActiveBillCount(0);
+      setPreviousMonthBillCount(0);
       setStatus('idle');
       return;
     }
@@ -29,6 +33,8 @@ export function useMonthOverview(input: {
     setErrorMessage(null);
     setMembers([]);
     setContext(null);
+    setActiveBillCount(0);
+    setPreviousMonthBillCount(0);
 
     try {
       const result = await loadMonthOverview({
@@ -38,6 +44,8 @@ export function useMonthOverview(input: {
       });
       setMembers(result.members);
       setContext(result.context);
+      setActiveBillCount(result.activeBillCount);
+      setPreviousMonthBillCount(result.previousMonthBillCount);
       setStatus('success');
     } catch (e) {
       setErrorMessage(mapPostgrestOrRpcError(e as Error));
@@ -64,6 +72,8 @@ export function useMonthOverview(input: {
     readOnlyMonth,
     members,
     context,
+    activeBillCount,
+    previousMonthBillCount,
     status,
     errorMessage,
     reload: load,

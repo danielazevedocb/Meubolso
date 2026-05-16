@@ -24,6 +24,7 @@ export type BillRow = {
   due_date: string | null;
   paid: boolean;
   note: string | null;
+  copied_from: string | null;
   created_at: string;
   updated_at: string;
 };
