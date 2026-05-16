@@ -1,6 +1,7 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useCallback, useState } from 'react';
 import { router } from 'expo-router';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet } from 'react-native';
 
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -10,9 +11,14 @@ import { Text, View } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { setPreferredGroupId } from '@/lib/active-group-preference';
+import { getPreferredGroupId, setPreferredGroupId } from '@/lib/active-group-preference';
 import { setSoloPreference } from '@/lib/onboarding-preference';
-import { fetchUserMembershipGroups, type UserGroupMembership } from '@/services/groups';
+import {
+  deleteGroupAsCreator,
+  fetchUserMembershipGroups,
+  leaveGroupMembership,
+  type UserGroupMembership,
+} from '@/services/groups';
 import { mapPostgrestOrRpcError } from '@/services/supabase-errors';
 
 function labelColorForTint(tint: string): string {
@@ -25,7 +31,8 @@ function labelColorForTint(tint: string): string {
 
 export default function MyGroupsScreen() {
   const scheme = useColorScheme() ?? 'light';
-  const tint = Colors[scheme].tint;
+  const palette = Colors[scheme];
+  const tint = palette.tint;
   const labelColor = labelColorForTint(tint);
 
   const { user, refreshOnboarding } = useAuth();
@@ -34,6 +41,7 @@ export default function MyGroupsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   const uid = user?.id;
 
@@ -76,7 +84,7 @@ export default function MyGroupsScreen() {
   }, [uid]);
 
   const onPick = async (g: UserGroupMembership) => {
-    if (!uid) return;
+    if (!uid || removingId) return;
     setBanner(null);
     setBusyId(g.group_id);
     try {
@@ -91,6 +99,49 @@ export default function MyGroupsScreen() {
     }
   };
 
+  const clearPreferredIfMatches = async (groupId: string) => {
+    const preferred = await getPreferredGroupId();
+    if (preferred === groupId) {
+      await setPreferredGroupId(null);
+    }
+  };
+
+  const performRemove = async (g: UserGroupMembership) => {
+    setBanner(null);
+    setRemovingId(g.group_id);
+    try {
+      if (g.role === 'owner') {
+        await deleteGroupAsCreator(g.group_id);
+      } else {
+        await leaveGroupMembership(g.group_id);
+      }
+      await clearPreferredIfMatches(g.group_id);
+      setItems((prev) => prev.filter((row) => row.group_id !== g.group_id));
+    } catch (e) {
+      setBanner(mapPostgrestOrRpcError(e as Error));
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
+  const confirmRemove = (g: UserGroupMembership) => {
+    const isOwner = g.role === 'owner';
+    Alert.alert(
+      isOwner ? 'Excluir grupo?' : 'Sair do grupo?',
+      isOwner
+        ? `O grupo "${g.group_name}" será removido para todos os membros. Esta ação não pode ser desfeita.`
+        : `Você deixa de ver as contas compartilhadas de "${g.group_name}". Pode entrar de novo com o código de convite.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: isOwner ? 'Excluir grupo' : 'Sair do grupo',
+          style: 'destructive',
+          onPress: () => void performRemove(g),
+        },
+      ],
+    );
+  };
+
   const listBusy = refreshing || phase === 'loading';
 
   return (
@@ -98,8 +149,8 @@ export default function MyGroupsScreen() {
       <View style={styles.inner}>
         <Text style={styles.title}>Escolha um grupo</Text>
         <Text style={styles.sub}>
-          Toque para abrir as contas neste espaço compartilhado. Use sempre que já pertencer a um grupo
-          e quiser voltar sem um novo código.
+          Toque para abrir as contas neste espaço compartilhado. Use o ícone de lixeira para sair do grupo
+          ou, se for administrador, excluir o grupo para todos.
         </Text>
 
         {banner ? (
@@ -140,30 +191,56 @@ export default function MyGroupsScreen() {
             }
             renderItem={({ item }) => {
               const roleLabel = item.role === 'owner' ? 'Administrador' : 'Membro';
-              const busy = busyId === item.group_id;
+              const opening = busyId === item.group_id;
+              const removing = removingId === item.group_id;
+              const rowBusy = opening || removing;
+              const isOwner = item.role === 'owner';
               return (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Abrir grupo ${item.group_name}`}
-                  accessibilityState={{ disabled: busy }}
-                  disabled={busy}
-                  onPress={() => void onPick(item)}
-                  style={({ pressed }) => [
-                    styles.rowBtn,
-                    {
-                      backgroundColor: tint,
-                      opacity: pressed || busy ? 0.85 : 1,
-                    },
-                  ]}>
-                  {busy ? (
-                    <ActivityIndicator color={labelColor} />
-                  ) : (
-                    <>
-                      <Text style={[styles.rowTitle, { color: labelColor }]}>{item.group_name}</Text>
-                      <Text style={[styles.rowMeta, { color: labelColor }]}>{roleLabel}</Text>
-                    </>
-                  )}
-                </Pressable>
+                <View style={styles.rowWrap}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Abrir grupo ${item.group_name}`}
+                    accessibilityState={{ disabled: rowBusy }}
+                    disabled={rowBusy}
+                    onPress={() => void onPick(item)}
+                    style={({ pressed }) => [
+                      styles.rowBtn,
+                      {
+                        backgroundColor: tint,
+                        opacity: pressed || rowBusy ? 0.85 : 1,
+                      },
+                    ]}>
+                    {opening ? (
+                      <ActivityIndicator color={labelColor} />
+                    ) : (
+                      <>
+                        <Text style={[styles.rowTitle, { color: labelColor }]}>{item.group_name}</Text>
+                        <Text style={[styles.rowMeta, { color: labelColor }]}>{roleLabel}</Text>
+                      </>
+                    )}
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      isOwner ? `Excluir grupo ${item.group_name}` : `Sair do grupo ${item.group_name}`
+                    }
+                    accessibilityState={{ disabled: rowBusy }}
+                    disabled={rowBusy}
+                    onPress={() => confirmRemove(item)}
+                    style={({ pressed }) => [
+                      styles.removeBtn,
+                      {
+                        borderColor: palette.borderSubtle,
+                        opacity: pressed || rowBusy ? 0.55 : 1,
+                      },
+                    ]}>
+                    {removing ? (
+                      <ActivityIndicator color={palette.balanceNegative} />
+                    ) : (
+                      <FontAwesome name="trash" size={18} color={palette.balanceNegative} />
+                    )}
+                  </Pressable>
+                </View>
               );
             }}
             ItemSeparatorComponent={() => <View style={styles.sep} />}
@@ -204,12 +281,26 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     flexGrow: 1,
   },
+  rowWrap: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 10,
+  },
   rowBtn: {
+    flex: 1,
     borderRadius: 10,
     paddingVertical: 14,
     paddingHorizontal: 16,
     minHeight: 72,
     justifyContent: 'center',
+  },
+  removeBtn: {
+    width: 52,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 72,
   },
   rowTitle: {
     fontSize: 16,

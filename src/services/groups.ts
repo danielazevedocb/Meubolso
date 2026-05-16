@@ -127,6 +127,20 @@ export async function createGroup(input: { name: string; creatorId: string }): P
   throw new Error('Não foi possível gerar um código de convite único. Tente novamente.');
 }
 
+/** Remove a sua participação no grupo (membros e administradores). */
+export async function leaveGroupMembership(groupId: string): Promise<void> {
+  const { error } = await supabase.from('group_members').delete().eq('group_id', groupId);
+
+  if (error) throw error;
+}
+
+/** Exclui o grupo por completo — só o criador (RLS `groups_delete_creator`). */
+export async function deleteGroupAsCreator(groupId: string): Promise<void> {
+  const { error } = await supabase.from('groups').delete().eq('id', groupId);
+
+  if (error) throw error;
+}
+
 /** Código de convite atual do grupo (membros: RLS `groups_select_members`). */
 export async function fetchGroupInviteCode(groupId: string): Promise<string> {
   const { data, error } = await supabase
