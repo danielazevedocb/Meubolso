@@ -1,15 +1,19 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
   Pressable,
   StyleSheet,
   View as RNView,
   type ListRenderItemInfo,
 } from 'react-native';
+
+import { HeaderBackButton } from '@react-navigation/elements';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import { MemberMonthCard } from '@/components/MemberMonthCard';
 import { DuplicateBillsModal } from '@/components/DuplicateBillsModal';
@@ -22,6 +26,7 @@ import { useDuplicateMonthImport } from '@/hooks/useDuplicateMonthImport';
 import { useGroupPresence } from '@/hooks/useGroupPresence';
 import { useMonthOverview } from '@/hooks/useMonthOverview';
 import { formatMonthHeadingPt } from '@/lib/month-key';
+import { getSoloPreference, setSoloPreference } from '@/lib/onboarding-preference';
 import type { MemberMonthSnapshot } from '@/types/finance';
 
 const money = new Intl.NumberFormat('pt-BR', {
@@ -30,12 +35,21 @@ const money = new Intl.NumberFormat('pt-BR', {
 });
 
 export default function HomeScreen() {
-  const { profile, user, signOut } = useAuth();
+  const navigation = useNavigation();
+  const { profile, user, signOut, refreshOnboarding } = useAuth();
   const scheme = useColorScheme() ?? 'light';
   const palette = Colors[scheme];
 
   const selfName =
     profile?.display_name?.trim() || user?.email?.split('@')[0] || 'Você';
+
+  const [soloModeFromPrefs, setSoloModeFromPrefs] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      void getSoloPreference().then((solo) => setSoloModeFromPrefs(solo));
+    }, []),
+  );
 
   const {
     monthLabel,
@@ -80,6 +94,55 @@ export default function HomeScreen() {
   });
 
   const monthTitle = formatMonthHeadingPt(monthLabel);
+  const handleSoloBackToChoices = useCallback(async () => {
+    try {
+      await setSoloPreference(false);
+      await refreshOnboarding();
+      router.replace('/(onboarding)');
+    } catch {
+      Alert.alert(
+        'Não foi possível voltar',
+        'Tente novamente ou encerre a sessão e entre de novo.',
+      );
+    }
+  }, [refreshOnboarding]);
+
+  /** Solo: mesma aparência do Stack (onboarding). Mostrar desde que a pref solo ou o contexto digam solo — não esperar só `loadMonthOverview`. */
+  const showSoloBackButton = useMemo(() => {
+    if (context?.mode === 'group') return false;
+    return context?.mode === 'solo' || soloModeFromPrefs;
+  }, [context?.mode, soloModeFromPrefs]);
+
+  useLayoutEffect(() => {
+    if (showSoloBackButton) {
+      navigation.setOptions({
+        headerTintColor: palette.text,
+        headerStyle: { backgroundColor: palette.background },
+        headerLeft: (headerProps) => (
+          <HeaderBackButton
+            {...headerProps}
+            displayMode="minimal"
+            tintColor={palette.text}
+            accessibilityLabel="Voltar para escolher modo de uso"
+            onPress={() => void handleSoloBackToChoices()}
+          />
+        ),
+      });
+    } else {
+      navigation.setOptions({
+        headerTintColor: undefined,
+        headerStyle: undefined,
+        headerLeft: undefined,
+      });
+    }
+  }, [
+    navigation,
+    showSoloBackButton,
+    palette.text,
+    palette.background,
+    handleSoloBackToChoices,
+  ]);
+
   const groupBillsTotal = useMemo(
     () => members.reduce((acc, m) => acc + m.billsTotal, 0),
     [members],
@@ -114,9 +177,28 @@ export default function HomeScreen() {
   const listHeader = useMemo(
     () => (
       <>
-        <Text style={styles.screenTitle}>Visão geral do mês</Text>
+        <Text style={[styles.screenKicker, { color: palette.tint }]}>Resumo financeiro</Text>
+        <Text style={[styles.screenTitle, { color: palette.text }]}>Visão geral do mês</Text>
 
-        <View style={[styles.monthBar, { borderColor: palette.borderSubtle }]}>
+        <RNView
+          style={[
+            styles.monthBarOuter,
+            {
+              borderColor: palette.borderSubtle,
+              backgroundColor: palette.surfaceSubtle,
+            },
+            Platform.select({
+              ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: scheme === 'dark' ? 0.45 : 0.12,
+                shadowRadius: 14,
+              },
+              android: { elevation: 5 },
+              default: {},
+            }),
+          ]}>
+          <RNView style={[styles.monthAccent, { backgroundColor: palette.tint }]} />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Mês anterior"
@@ -125,7 +207,7 @@ export default function HomeScreen() {
             style={({ pressed }) => [styles.monthChevron, { opacity: pressed ? 0.55 : 1 }]}>
             <FontAwesome name="chevron-left" size={18} color={palette.tint} />
           </Pressable>
-          <Text style={styles.monthLabel}>{monthTitle}</Text>
+          <Text style={[styles.monthLabel, { color: palette.text }]}>{monthTitle}</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Próximo mês"
@@ -134,7 +216,7 @@ export default function HomeScreen() {
             style={({ pressed }) => [styles.monthChevron, { opacity: pressed ? 0.55 : 1 }]}>
             <FontAwesome name="chevron-right" size={18} color={palette.tint} />
           </Pressable>
-        </View>
+        </RNView>
 
         {readOnlyMonth ? (
           <View
@@ -184,11 +266,22 @@ export default function HomeScreen() {
         ) : null}
 
         {context && status === 'success' ? (
-          <Text style={[styles.modeHint, { color: palette.caption }]}>
-            {context.mode === 'solo'
-              ? 'Modo solo — só suas contas entram aqui.'
-              : 'Grupo — cada pessoa com seu salário e contas.'}
-          </Text>
+          <View
+            style={[
+              styles.modePill,
+              {
+                backgroundColor:
+                  scheme === 'dark' ? 'rgba(47, 149, 220, 0.12)' : 'rgba(47, 149, 220, 0.08)',
+                borderColor: 'rgba(47, 149, 220, 0.35)',
+              },
+            ]}
+            accessibilityRole="text">
+            <Text style={[styles.modeHint, { color: palette.caption }]}>
+              {context.mode === 'solo'
+                ? 'Modo solo — só suas contas entram aqui.'
+                : 'Grupo — cada pessoa com seu salário e contas.'}
+            </Text>
+          </View>
         ) : null}
 
         {members.length > 1 && status === 'success' ? (
@@ -234,6 +327,7 @@ export default function HomeScreen() {
       palette.tint,
       readOnlyMonth,
       reload,
+      scheme,
       status,
     ],
   );
@@ -315,19 +409,39 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     gap: 16,
   },
-  screenTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+  screenKicker: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 6,
   },
-  monthBar: {
+  screenTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    marginBottom: 14,
+  },
+  monthBarOuter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
+    borderRadius: 16,
     paddingVertical: 12,
     paddingHorizontal: 8,
+    paddingLeft: 10,
     gap: 8,
+    overflow: 'hidden',
+  },
+  monthAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
   },
   monthChevron: {
     minWidth: 44,
@@ -338,8 +452,9 @@ const styles = StyleSheet.create({
   monthLabel: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
+    letterSpacing: -0.2,
   },
   readOnlyBanner: {
     borderWidth: StyleSheet.hairlineWidth,
@@ -382,9 +497,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
+  modePill: {
+    alignSelf: 'flex-start',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    marginTop: 2,
+  },
   modeHint: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
   },
   aggregate: {
     fontSize: 14,

@@ -11,6 +11,12 @@ type MonthRow = {
 type BillRow = {
   user_id: string;
   amount: number | string | null;
+  paid: boolean;
+};
+
+type BillsAggregate = {
+  billsTotal: number;
+  paidTotal: number;
 };
 
 function toNumber(v: number | string | null | undefined): number {
@@ -150,32 +156,35 @@ async function fetchActiveBillCount(ctx: FinanceContext, monthLabel: string): Pr
   return count ?? 0;
 }
 
-async function fetchBillsTotalsByUser(
+async function fetchBillsAggregatesByUser(
   ctx: FinanceContext,
   monthLabel: string,
-  userId: string,
-): Promise<Map<string, number>> {
+  soloOrAuthUserId: string,
+): Promise<Map<string, BillsAggregate>> {
   assertMonthLabel(monthLabel);
 
   const base = supabase
     .from('bills')
-    .select('user_id, amount')
+    .select('user_id, amount, paid')
     .eq('month_label', monthLabel)
     .is('deleted_at', null);
 
   const q =
     ctx.mode === 'solo'
-      ? base.is('group_id', null).eq('user_id', userId)
+      ? base.is('group_id', null).eq('user_id', soloOrAuthUserId)
       : base.eq('group_id', ctx.groupId);
 
   const { data, error } = await q;
   if (error) throw error;
 
-  const map = new Map<string, number>();
+  const map = new Map<string, BillsAggregate>();
   for (const row of (data ?? []) as BillRow[]) {
     const uid = row.user_id;
-    const prev = map.get(uid) ?? 0;
-    map.set(uid, prev + toNumber(row.amount));
+    const amt = toNumber(row.amount);
+    const cur = map.get(uid) ?? { billsTotal: 0, paidTotal: 0 };
+    cur.billsTotal += amt;
+    if (row.paid) cur.paidTotal += amt;
+    map.set(uid, cur);
   }
   return map;
 }
@@ -199,22 +208,25 @@ export async function loadMonthOverview(input: {
 
   const duplicateSourceMonthLabel = shiftMonthKey(monthLabel, -1);
 
-  const [salaryByUser, billsByUser, activeBillCount, previousMonthBillCount] = await Promise.all([
+  const [salaryByUser, billsAggByUser, activeBillCount, previousMonthBillCount] = await Promise.all([
     fetchMonthsTotals(ctx, monthLabel, memberIds),
-    fetchBillsTotalsByUser(ctx, monthLabel, input.userId),
+    fetchBillsAggregatesByUser(ctx, monthLabel, input.userId),
     fetchActiveBillCount(ctx, monthLabel),
     fetchActiveBillCount(ctx, duplicateSourceMonthLabel),
   ]);
 
   const snapshots: MemberMonthSnapshot[] = members.map((m) => {
     const salary = salaryByUser.get(m.userId) ?? 0;
-    const billsTotal = billsByUser.get(m.userId) ?? 0;
+    const agg = billsAggByUser.get(m.userId) ?? { billsTotal: 0, paidTotal: 0 };
+    const billsTotal = agg.billsTotal;
+    const paidTotal = agg.paidTotal;
     const balance = salary - billsTotal;
     return {
       userId: m.userId,
       displayName: m.displayName,
       salary,
       billsTotal,
+      paidTotal,
       balance,
     };
   });

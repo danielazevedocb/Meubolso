@@ -4,7 +4,11 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { supabase } from '@/lib/supabase';
 import { getSoloPreference, setSoloPreference } from '@/lib/onboarding-preference';
 import type { ProfileRow } from '@/types/database.types';
-import { countUserGroupMemberships, fetchProfile } from '@/services/groups';
+import {
+  countUserGroupMemberships,
+  ensureSelfProfile,
+  fetchProfile,
+} from '@/services/groups';
 
 type AuthContextValue = {
   session: Session | null;
@@ -35,11 +39,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const user = session?.user ?? null;
 
-  const hydrateProfileAndOnboarding = useCallback(async (userId: string) => {
-    const [solo, memberCount, profileRow] = await Promise.all([
+  const hydrateProfileAndOnboarding = useCallback(async (authUser: User) => {
+    let profileRow = await fetchProfile(authUser.id);
+    if (!profileRow) {
+      await ensureSelfProfile(authUser);
+      profileRow = await fetchProfile(authUser.id);
+    }
+    const [solo, memberCount] = await Promise.all([
       getSoloPreference(),
-      countUserGroupMemberships(userId),
-      fetchProfile(userId),
+      countUserGroupMemberships(authUser.id),
     ]);
     setProfile((profileRow ?? null) as ProfileRow | null);
     setOnboardingComplete(solo || memberCount > 0);
@@ -81,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setRoutingReady(false);
       try {
-        await hydrateProfileAndOnboarding(user.id);
+        await hydrateProfileAndOnboarding(user);
       } catch {
         if (!cancelled) {
           setOnboardingComplete(false);
@@ -99,13 +107,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [initialized, user?.id, hydrateProfileAndOnboarding]);
 
   const refreshProfile = useCallback(async () => {
-    if (!user?.id) {
+    if (!user) {
       setProfile(null);
       return;
     }
-    const row = await fetchProfile(user.id);
+    let row = await fetchProfile(user.id);
+    if (!row) {
+      await ensureSelfProfile(user);
+      row = await fetchProfile(user.id);
+    }
     setProfile((row ?? null) as ProfileRow | null);
-  }, [user?.id]);
+  }, [user]);
 
   const refreshOnboarding = useCallback(async () => {
     if (!user?.id) return;

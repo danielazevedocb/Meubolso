@@ -1,3 +1,4 @@
+import type { User } from '@supabase/supabase-js';
 import { generateInviteCode } from '@/lib/invite-code';
 import { supabase } from '@/lib/supabase';
 import type { InviteLookupRow } from '@/types/database.types';
@@ -19,6 +20,26 @@ export async function fetchProfile(userId: string) {
 
   if (error) throw error;
   return data;
+}
+
+/**
+ * Garante linha em `public.profiles` para o utilizador autenticado.
+ * Necessário para FKs (`months.user_id`, etc.) quando o trigger `on_auth_user_created`
+ * não correu (utilizador antigo ou criado manualmente no painel).
+ */
+export async function ensureSelfProfile(authUser: User): Promise<void> {
+  const metaName = authUser.user_metadata?.name;
+  const displayName =
+    (typeof metaName === 'string' && metaName.trim()) ||
+    authUser.email?.split('@')[0]?.trim() ||
+    'Utilizador';
+
+  const { error } = await supabase.from('profiles').upsert(
+    { id: authUser.id, display_name: displayName },
+    { onConflict: 'id' },
+  );
+
+  if (error) throw error;
 }
 
 export async function lookupInvite(inviteCode: string): Promise<InviteLookupRow[]> {

@@ -9,7 +9,10 @@ export type MemberMonthSnapshot = {
   userId: string;
   displayName: string;
   salary: number;
+  /** Soma dos valores de todas as contas do mês. */
   billsTotal: number;
+  /** Soma dos valores das contas marcadas como pagas. */
+  paidTotal: number;
   balance: number;
 };
 

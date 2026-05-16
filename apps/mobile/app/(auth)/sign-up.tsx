@@ -124,13 +124,56 @@ export default function SignUpScreen() {
       setBanner(mapAuthError(error));
       return;
     }
-    if (!data.session) {
-      setRegisteredEmail(values.email.trim());
+    if (data.session) {
+      /** Confirmação por e-mail desligada: o AuthProvider segue o fluxo logado. */
+      return;
+    }
+
+    const email = values.email.trim();
+    const password = values.password;
+
+    /**
+     * `signUp` sem sessão pode ser (1) novo utilizador a aguardar confirmação ou (2) e-mail já
+     * registado sem revelação explícita (Supabase). Um `signIn` com as mesmas credenciais ajuda:
+     * — sessão → conta já confirmada, entra normalmente;
+     * — “e-mail não confirmado” → manter ecrã de verificação / reenvio;
+     * — credenciais inválidas → e-mail provavelmente já existe com outra senha (Entrar / recuperar).
+     */
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (!signInError && signInData.session) {
+      return;
+    }
+
+    const signInMsg = signInError?.message?.toLowerCase() ?? '';
+    if (signInMsg.includes('email not confirmed')) {
+      setRegisteredEmail(email);
       setAwaitingEmailVerify(true);
       setResendFeedback(null);
       return;
     }
-    /** Conta já ativa (confirmação por e-mail desligada no projeto): o AuthProvider redireciona. */
+
+    if (
+      signInMsg.includes('invalid login credentials') ||
+      signInMsg.includes('invalid_credentials')
+    ) {
+      setBanner(
+        'Este e-mail já está associado a uma conta. Use Entrar com a senha correta ou recupere o acesso. Se acabou de cadastrar, confirme o e-mail antes de entrar.',
+      );
+      return;
+    }
+
+    if (signInError) {
+      setBanner(mapAuthError(signInError));
+      return;
+    }
+
+    setRegisteredEmail(email);
+    setAwaitingEmailVerify(true);
+    setResendFeedback(null);
   });
 
   return (

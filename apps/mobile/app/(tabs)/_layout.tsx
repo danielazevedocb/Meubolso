@@ -32,6 +32,7 @@ export default function TabLayout() {
         options={{
           title: 'Visão geral',
           tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
+          tabBarStyle: { display: 'none' },
           headerRight: () => (
             <Link href="/modal" asChild>
               <Pressable
@@ -57,6 +58,8 @@ export default function TabLayout() {
         options={{
           href: null,
           title: 'Contas',
+          /** Tela em modo “folha”; utilizador volta pela seta. */
+          tabBarStyle: { display: 'none' },
         }}
       />
       <Tabs.Screen
@@ -69,6 +72,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="two"
         options={{
+          href: null,
           title: 'Tab Two',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
         }}

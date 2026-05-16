@@ -5,10 +5,12 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Switch,
+  View as RNView,
   type ListRenderItemInfo,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -57,65 +59,89 @@ const ContasBillCard = memo(function ContasBillCard({
   const foreign = !!selfUserId && bill.user_id !== selfUserId;
   const canMutate = !readOnlyMonth;
 
+  const cardShadow = Platform.select({
+    ios: {
+      shadowColor: '#2f95dc',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.12,
+      shadowRadius: 14,
+    },
+    android: { elevation: 5 },
+    default: {},
+  });
+
+  const headerTint =
+    palette.background === Colors.dark.background
+      ? 'rgba(47, 149, 220, 0.16)'
+      : 'rgba(47, 149, 220, 0.1)';
+
   return (
-    <View
+    <RNView
       style={[
         styles.billCard,
         { borderColor: palette.borderSubtle, backgroundColor: palette.surfaceSubtle },
+        cardShadow,
       ]}>
-      <View style={styles.billTop}>
-        <View style={styles.billTitleCol}>
-          <Text style={styles.billCompany}>{bill.company}</Text>
-          {foreign ? (
-            <Text style={[styles.foreignHint, { color: palette.caption }]}>Conta de outro membro</Text>
-          ) : null}
-        </View>
-        <Text style={styles.billAmount}>{money.format(bill.amount)}</Text>
-      </View>
-      <View style={styles.billMeta}>
-        {bill.due_date ? (
-          <Text style={[styles.due, { color: palette.caption }]}>Vence em {bill.due_date}</Text>
-        ) : (
-          <Text style={[styles.due, { color: palette.caption }]}>Sem vencimento</Text>
-        )}
-        <Text style={[styles.paidTag, { color: bill.paid ? palette.balancePositive : palette.caption }]}>
-          {bill.paid ? 'Pago' : 'Pendente'}
-        </Text>
-      </View>
-      {bill.note ? <Text style={[styles.billNote, { color: palette.caption }]}>{bill.note}</Text> : null}
-      <View style={styles.billActions}>
-        <View style={styles.paidToggle}>
-          <Text style={styles.paidToggleLabel}>Pago</Text>
-          <Switch
-            accessibilityLabel={`Marcar ${bill.company} como ${bill.paid ? 'pendente' : 'pago'}`}
-            value={bill.paid}
-            disabled={!canMutate}
-            onValueChange={(v) => onTogglePaid(bill.id, v)}
-            trackColor={{ false: '#888', true: palette.tint }}
-          />
-        </View>
-        <View style={styles.inlineBtns}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Editar ${bill.company}`}
-            accessibilityState={{ disabled: !canMutate }}
-            disabled={!canMutate}
-            onPress={() => onEdit(bill)}
-            style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.55 : !canMutate ? 0.35 : 1 }]}>
-            <FontAwesome name="pencil" size={18} color={palette.tint} />
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Excluir ${bill.company}`}
-            accessibilityState={{ disabled: !canMutate }}
-            disabled={!canMutate}
-            onPress={() => onConfirmDelete(bill)}
-            style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.55 : !canMutate ? 0.35 : 1 }]}>
-            <FontAwesome name="trash" size={18} color={palette.balanceNegative} />
-          </Pressable>
-        </View>
-      </View>
-    </View>
+      <RNView style={[styles.billCardHeader, { backgroundColor: headerTint, borderBottomColor: palette.borderSubtle }]}>
+        <RNView style={styles.billTop}>
+          <RNView style={styles.billTitleCol}>
+            <Text style={[styles.billCompany, { color: palette.text }]}>{bill.company}</Text>
+            {foreign ? (
+              <Text style={[styles.foreignHint, { color: palette.caption }]}>Conta de outro membro</Text>
+            ) : null}
+          </RNView>
+          <Text style={[styles.billAmount, { color: palette.text }]}>{money.format(bill.amount)}</Text>
+        </RNView>
+      </RNView>
+      <RNView style={styles.billCardBody}>
+        <RNView style={styles.billMeta}>
+          {bill.due_date ? (
+            <Text style={[styles.due, { color: palette.caption }]}>Vence em {bill.due_date}</Text>
+          ) : (
+            <Text style={[styles.due, { color: palette.caption }]}>Sem vencimento</Text>
+          )}
+          <Text
+            style={[styles.paidTag, { color: bill.paid ? palette.balancePositive : palette.caption }]}>
+            {bill.paid ? 'Pago' : 'Pendente'}
+          </Text>
+        </RNView>
+        {bill.note ? (
+          <Text style={[styles.billNote, { color: palette.caption }]}>{bill.note}</Text>
+        ) : null}
+        <RNView style={[styles.billActions, { borderTopColor: palette.borderSubtle }]}>
+          <RNView style={styles.paidToggle}>
+            <Text style={[styles.paidToggleLabel, { color: palette.text }]}>Pago</Text>
+            <Switch
+              accessibilityLabel={`Marcar ${bill.company} como ${bill.paid ? 'pendente' : 'pago'}`}
+              value={bill.paid}
+              disabled={!canMutate}
+              onValueChange={(v) => onTogglePaid(bill.id, v)}
+              trackColor={{ false: '#888', true: palette.tint }}
+            />
+          </RNView>
+          <RNView style={styles.inlineBtns}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Editar ${bill.company}`}
+              accessibilityState={{ disabled: !canMutate }}
+              disabled={!canMutate}
+              onPress={() => onEdit(bill)}
+              style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.55 : !canMutate ? 0.35 : 1 }]}>
+              <FontAwesome name="pencil" size={18} color={palette.tint} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Excluir ${bill.company}`}
+              accessibilityState={{ disabled: !canMutate }}
+              disabled={!canMutate}
+              onPress={() => onConfirmDelete(bill)}
+              style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.55 : !canMutate ? 0.35 : 1 }]}>
+              <FontAwesome name="trash" size={18} color={palette.balanceNegative} />
+            </Pressable>
+          </RNView>
+        </RNView>
+      </RNView>
+    </RNView>
   );
 });
 
@@ -345,25 +371,49 @@ export default function ContasScreen() {
 
   const listFooter = useMemo(
     () => (
-      <View style={styles.footer}>
-        <View style={[styles.summary, { borderColor: palette.borderSubtle }]}>
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: palette.caption }]}>Total das contas</Text>
-            <Text style={styles.summaryValue}>{money.format(billsTotal)}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: palette.caption }]}>Salário (mês)</Text>
-            <Text style={styles.summaryValue}>{money.format(monthRow?.salary ?? 0)}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: palette.caption }]}>Saldo</Text>
-            <Text style={[styles.summaryValueStrong, { color: balanceColor }]}>
-              {money.format(balance)}
-            </Text>
-          </View>
-        </View>
+      <RNView style={styles.footer}>
+        <RNView
+          style={[
+            styles.summaryCard,
+            { borderColor: palette.borderSubtle, backgroundColor: palette.surfaceSubtle },
+            Platform.select({
+              ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: palette.background === Colors.dark.background ? 0.35 : 0.1,
+                shadowRadius: 16,
+              },
+              android: { elevation: 6 },
+              default: {},
+            }),
+          ]}>
+          <RNView style={[styles.summaryAccent, { backgroundColor: palette.tint }]} />
+          <RNView
+            style={[styles.summaryHeader, { borderBottomColor: palette.borderSubtle, backgroundColor: 'rgba(47,149,220,0.1)' }]}>
+            <Text style={[styles.summaryKicker, { color: palette.tint }]}>Resumo</Text>
+          </RNView>
+          <RNView style={styles.summaryRows}>
+            <RNView style={[styles.summaryRow, { borderBottomColor: palette.borderSubtle }]}>
+              <Text style={[styles.summaryLabel, { color: palette.caption }]}>Total das contas</Text>
+              <Text style={[styles.summaryValue, { color: palette.text }]}>{money.format(billsTotal)}</Text>
+            </RNView>
+            <RNView style={[styles.summaryRow, { borderBottomColor: palette.borderSubtle }]}>
+              <Text style={[styles.summaryLabel, { color: palette.caption }]}>Salário (mês)</Text>
+              <Text style={[styles.summaryValue, { color: palette.text }]}>
+                {money.format(monthRow?.salary ?? 0)}
+              </Text>
+            </RNView>
+            <RNView style={styles.summaryBalanceRow}>
+              <Text style={[styles.summaryLabelStrong, { color: palette.caption }]}>Saldo</Text>
+              <Text style={[styles.summaryValueStrong, { color: balanceColor }]}>
+                {money.format(balance)}
+              </Text>
+            </RNView>
+          </RNView>
+        </RNView>
 
-        <Text style={styles.sectionTitle}>Salário e nota do mês</Text>
+        <Text style={[styles.sectionKicker, { color: palette.tint }]}>Dados do mês</Text>
+        <Text style={[styles.sectionTitle, { color: palette.text }]}>Salário e nota do mês</Text>
         <Text style={[styles.hint, { color: palette.caption }]}>
           Valem para <Text style={{ fontWeight: '700' }}>{activeMemberName}</Text> neste mês, conforme seu
           grupo ou modo solo.
@@ -393,7 +443,7 @@ export default function ContasScreen() {
           disabled={!monthRow || monthMetaSaving || status !== 'success' || readOnlyMonth}
           loading={monthMetaSaving}
         />
-      </View>
+      </RNView>
     ),
     [
       activeMemberName,
@@ -403,8 +453,12 @@ export default function ContasScreen() {
       monthMetaSaving,
       monthNoteInput,
       monthRow,
+      palette.background,
       palette.borderSubtle,
       palette.caption,
+      palette.surfaceSubtle,
+      palette.text,
+      palette.tint,
       readOnlyMonth,
       salaryInput,
       saveMonthMeta,
@@ -414,20 +468,21 @@ export default function ContasScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: palette.background }]} edges={['top']}>
-      <View style={styles.topBar}>
+      <RNView style={[styles.topBar, { borderBottomColor: palette.borderSubtle }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Voltar"
           hitSlop={12}
           onPress={() => router.back()}
           style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.55 : 1 }]}>
-          <FontAwesome name="chevron-left" size={20} color={palette.tint} />
+          <FontAwesome name="chevron-left" size={22} color={palette.text} />
         </Pressable>
-        <View style={styles.topTitles}>
-          <Text style={styles.screenTitle}>Contas</Text>
+        <RNView style={styles.topTitles}>
+          <Text style={[styles.topKicker, { color: palette.tint }]}>Contas do mês</Text>
+          <Text style={[styles.screenTitle, { color: palette.text }]}>Contas</Text>
           <Text style={[styles.subTitle, { color: palette.caption }]}>{monthHeading}</Text>
-        </View>
-        <View style={styles.topBarTrail}>
+        </RNView>
+        <RNView style={styles.topBarTrail}>
           {showImportMenu ? (
             <Pressable
               accessibilityRole="button"
@@ -451,10 +506,10 @@ export default function ContasScreen() {
                   pressed || status !== 'success' || !memberUserId || readOnlyMonth ? 0.4 : 1,
               },
             ]}>
-            <FontAwesome name="plus" size={20} color={palette.tint} />
+            <FontAwesome name="plus" size={22} color={palette.tint} />
           </Pressable>
-        </View>
-      </View>
+        </RNView>
+      </RNView>
 
       {readOnlyMonth && status === 'success' ? (
         <View
@@ -525,9 +580,13 @@ export default function ContasScreen() {
           </ScrollView>
         </View>
       ) : (
-        <Text style={[styles.singleMemberHint, { color: palette.caption }]}>
-          {activeMemberName}
-        </Text>
+        <RNView
+          style={[
+            styles.singleMemberPill,
+            { backgroundColor: palette.surfaceSubtle, borderColor: palette.borderSubtle },
+          ]}>
+          <Text style={[styles.singleMemberHint, { color: palette.caption }]}>{activeMemberName}</Text>
+        </RNView>
       )}
 
       {status === 'loading' || status === 'idle' ? (
@@ -602,8 +661,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
     gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   backBtn: {
     minWidth: 44,
@@ -613,6 +673,13 @@ const styles = StyleSheet.create({
   },
   topTitles: {
     flex: 1,
+    gap: 2,
+  },
+  topKicker: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   topBarTrail: {
     flexDirection: 'row',
@@ -648,8 +715,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   screenTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '800',
+    letterSpacing: -0.3,
   },
   subTitle: {
     fontSize: 14,
@@ -720,11 +788,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  singleMemberHint: {
+  singleMemberPill: {
+    alignSelf: 'flex-start',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  singleMemberHint: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   centered: {
     flex: 1,
@@ -758,11 +833,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   billCard: {
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: 14,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  billCardHeader: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  billCardBody: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
     gap: 8,
-    marginBottom: 4,
   },
   billTop: {
     flexDirection: 'row',
@@ -805,7 +890,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 4,
+    marginTop: 8,
+    paddingTop: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   paidToggle: {
     flexDirection: 'row',
@@ -827,20 +914,55 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   footer: {
-    marginTop: 20,
-    gap: 8,
-    paddingBottom: 24,
-  },
-  summary: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    padding: 14,
+    marginTop: 8,
     gap: 10,
+    paddingBottom: 40,
+  },
+  summaryCard: {
+    position: 'relative',
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  summaryAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    zIndex: 1,
+  },
+  summaryHeader: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  summaryKicker: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  summaryRows: {
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 16,
+    gap: 0,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  summaryBalanceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 14,
+    marginTop: 4,
     gap: 12,
   },
   summaryLabel: {
@@ -849,15 +971,32 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 15,
     fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  summaryLabelStrong: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   summaryValueStrong: {
-    fontSize: 17,
+    fontSize: 22,
     fontWeight: '800',
+    letterSpacing: -0.5,
+    fontVariant: ['tabular-nums'],
+  },
+  sectionKicker: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginTop: 8,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    marginTop: 12,
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+    marginTop: 2,
   },
   hint: {
     fontSize: 13,
