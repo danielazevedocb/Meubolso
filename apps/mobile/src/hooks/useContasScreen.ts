@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { currentMonthKeyNow } from '@/lib/month-key';
+import { currentMonthKeyNow, isReadOnlyMonth } from '@/lib/month-key';
 import {
   fetchBillsForMember,
   insertBill,
@@ -39,6 +39,8 @@ export function useContasScreen(input: {
     () => coerceMonthLabel(input.routeMonthLabel),
     [input.routeMonthLabel],
   );
+
+  const readOnlyMonth = useMemo(() => isReadOnlyMonth(monthLabel), [monthLabel]);
 
   const [status, setStatus] = useState<Status>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -145,7 +147,7 @@ export function useContasScreen(input: {
 
   const setPaidOptimistic = useCallback(
     async (billId: string, nextPaid: boolean) => {
-      if (!context) return;
+      if (!context || readOnlyMonth) return;
       const prev = bills;
       setBills((rows) => rows.map((b) => (b.id === billId ? { ...b, paid: nextPaid } : b)));
       try {
@@ -156,12 +158,12 @@ export function useContasScreen(input: {
         setErrorMessage(mapPostgrestOrRpcError(e as Error));
       }
     },
-    [bills, context, memberUserId, monthLabel, refreshMemberData],
+    [bills, context, memberUserId, monthLabel, readOnlyMonth, refreshMemberData],
   );
 
   const removeBillConfirmed = useCallback(
     async (billId: string) => {
-      if (!context) return;
+      if (!context || readOnlyMonth) return;
       try {
         await softDeleteBill(billId);
         await refreshMemberData(context, memberUserId, monthLabel);
@@ -169,7 +171,7 @@ export function useContasScreen(input: {
         setErrorMessage(mapPostgrestOrRpcError(e as Error));
       }
     },
-    [context, memberUserId, monthLabel, refreshMemberData],
+    [context, memberUserId, monthLabel, readOnlyMonth, refreshMemberData],
   );
 
   const createBill = useCallback(
@@ -182,6 +184,7 @@ export function useContasScreen(input: {
       note: string | null;
     }) => {
       if (!context) throw new Error('Contexto indisponível');
+      if (readOnlyMonth) throw new Error('Este mês é somente leitura.');
       try {
         await insertBill({
           ctx: context,
@@ -199,7 +202,7 @@ export function useContasScreen(input: {
         throw e;
       }
     },
-    [context, monthLabel, memberUserId, refreshMemberData],
+    [context, monthLabel, memberUserId, readOnlyMonth, refreshMemberData],
   );
 
   const saveBill = useCallback(
@@ -215,6 +218,7 @@ export function useContasScreen(input: {
       },
     ) => {
       if (!context) throw new Error('Contexto indisponível');
+      if (readOnlyMonth) throw new Error('Este mês é somente leitura.');
       try {
         await updateBill({
           id: billId,
@@ -233,12 +237,12 @@ export function useContasScreen(input: {
         throw e;
       }
     },
-    [context, memberUserId, monthLabel, refreshMemberData],
+    [context, memberUserId, monthLabel, readOnlyMonth, refreshMemberData],
   );
 
   const saveMonthSalaryNote = useCallback(
     async (salary: number, note: string | null) => {
-      if (!context || !monthRow) return;
+      if (!context || !monthRow || readOnlyMonth) return;
       try {
         await updateMonthSalaryNote({
           monthId: monthRow.id,
@@ -251,7 +255,7 @@ export function useContasScreen(input: {
         throw e;
       }
     },
-    [context, monthRow, memberUserId, monthLabel, refreshMemberData],
+    [context, monthRow, memberUserId, monthLabel, readOnlyMonth, refreshMemberData],
   );
 
   const dismissError = useCallback(() => setErrorMessage(null), []);
@@ -261,6 +265,7 @@ export function useContasScreen(input: {
 
   return {
     monthLabel,
+    readOnlyMonth,
     context,
     members,
     memberUserId,

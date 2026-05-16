@@ -71,8 +71,8 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 | Tela de contas por membro: lista, totais, salário, nota do mês | concluído — `app/(tabs)/contas.tsx` + serviços `bills` / `month-settings` |
 | Adicionar/editar conta (modal/tela) + confirmação ao editar conta de outro membro | concluído — `BillEditorModal` + aviso RLS em edição alheia |
 | Marcar pago/pendente, excluir com confirmação | concluído — toggle otimista + soft-delete `deleted_at` + `Alert` |
-| Indicador “membro online” (Realtime/presence conforme design) | pendente |
-| Meses anteriores somente leitura após regra de negócio (PRD §10 item 3) | pendente |
+| Indicador “membro online” (Realtime/presence conforme design) | concluído — `useGroupPresence`: canal `group-presence:{groupId}`, presence key = `userId`; indicador nos cards da home e chips em Contas |
+| Meses anteriores somente leitura após regra de negócio (PRD §10 item 3) | concluído — `isReadOnlyMonth` em `month-key.ts`; mês com `YYYY-MM` anterior ao mês corrente bloqueia edição na UI e nas mutations do hook |
 | Duplicar/importar contas do mês anterior (banner, menu, modais, anti-duplicidade) | pendente |
 | Configurações: perfil, grupo, salário, logout | parcial — salário e nota do mês por membro na tela Contas (`months`); perfil/grupo/logout pendente |
 
@@ -109,7 +109,7 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 | 5 | Saldo recalculado automaticamente | pendente |
 | 6 | Marcar conta como paga | concluído |
 | 7 | Navegar entre meses anteriores | concluído |
-| 8 | Meses anteriores não editáveis | pendente |
+| 8 | Meses anteriores não editáveis | concluído |
 | 9 | Sugestão de copiar contas ao abrir mês vazio | pendente |
 | 10 | Cópia reseta status para pendente | pendente |
 | 11 | Importação não sobrescreve contas existentes (regra PRD) | pendente |

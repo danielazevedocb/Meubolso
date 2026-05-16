@@ -21,6 +21,7 @@ import { parseMoneyInput } from '@/forms/bill-form-schema';
 import { useAuth } from '@/hooks/useAuth';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContasScreen } from '@/hooks/useContasScreen';
+import { useGroupPresence } from '@/hooks/useGroupPresence';
 import { formatMonthHeadingPt } from '@/lib/month-key';
 import type { BillRow } from '@/types/finance';
 
@@ -47,6 +48,7 @@ export default function ContasScreen() {
 
   const {
     monthLabel,
+    readOnlyMonth,
     context,
     members,
     memberUserId,
@@ -65,6 +67,15 @@ export default function ContasScreen() {
     saveBill,
     saveMonthSalaryNote,
   } = hook;
+
+  const presenceEnabled =
+    status === 'success' && context?.mode === 'group' && members.length > 1;
+
+  const onlineUserIds = useGroupPresence({
+    groupId: context?.mode === 'group' ? context.groupId : undefined,
+    userId: user?.id,
+    enabled: presenceEnabled,
+  });
 
   const monthHeading = useMemo(() => formatMonthHeadingPt(monthLabel), [monthLabel]);
   const balanceColor = balance < 0 ? palette.balanceNegative : palette.balancePositive;
@@ -90,15 +101,27 @@ export default function ContasScreen() {
     [monthRow?.id, monthRow?.salary, monthRow?.note],
   );
 
+  useEffect(() => {
+    if (readOnlyMonth && editorOpen) {
+      setEditorOpen(false);
+      setEditingBill(null);
+    }
+  }, [readOnlyMonth, editorOpen]);
+
   const openNew = useCallback(() => {
+    if (readOnlyMonth) return;
     setEditingBill(null);
     setEditorOpen(true);
-  }, []);
+  }, [readOnlyMonth]);
 
-  const openEdit = useCallback((b: BillRow) => {
-    setEditingBill(b);
-    setEditorOpen(true);
-  }, []);
+  const openEdit = useCallback(
+    (b: BillRow) => {
+      if (readOnlyMonth) return;
+      setEditingBill(b);
+      setEditorOpen(true);
+    },
+    [readOnlyMonth],
+  );
 
   const confirmDelete = useCallback((b: BillRow) => {
     Alert.alert(
@@ -135,6 +158,7 @@ export default function ContasScreen() {
   const renderBill = useCallback(
     ({ item: b }: { item: BillRow }) => {
       const foreign = !!user?.id && b.user_id !== user.id;
+      const canMutate = !readOnlyMonth;
       return (
         <View
           style={[
@@ -173,6 +197,7 @@ export default function ContasScreen() {
               <Switch
                 accessibilityLabel={`Marcar ${b.company} como ${b.paid ? 'pendente' : 'pago'}`}
                 value={b.paid}
+                disabled={!canMutate}
                 onValueChange={(v) => void setPaidOptimistic(b.id, v)}
                 trackColor={{ false: '#888', true: palette.tint }}
               />
@@ -181,15 +206,19 @@ export default function ContasScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Editar ${b.company}`}
+                accessibilityState={{ disabled: !canMutate }}
+                disabled={!canMutate}
                 onPress={() => openEdit(b)}
-                style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.55 : 1 }]}>
+                style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.55 : !canMutate ? 0.35 : 1 }]}>
                 <FontAwesome name="pencil" size={18} color={palette.tint} />
               </Pressable>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Excluir ${b.company}`}
+                accessibilityState={{ disabled: !canMutate }}
+                disabled={!canMutate}
                 onPress={() => confirmDelete(b)}
-                style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.55 : 1 }]}>
+                style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.55 : !canMutate ? 0.35 : 1 }]}>
                 <FontAwesome name="trash" size={18} color={palette.balanceNegative} />
               </Pressable>
             </View>
@@ -206,6 +235,7 @@ export default function ContasScreen() {
       palette.caption,
       palette.surfaceSubtle,
       palette.tint,
+      readOnlyMonth,
       setPaidOptimistic,
       user?.id,
     ],
@@ -241,7 +271,7 @@ export default function ContasScreen() {
           value={salaryInput}
           onChangeText={setSalaryInput}
           keyboardType="decimal-pad"
-          editable={!!monthRow && status === 'success'}
+          editable={!!monthRow && status === 'success' && !readOnlyMonth}
           hint="Mesmo valor usado na visão geral para o saldo."
           containerStyle={styles.fieldGap}
         />
@@ -250,14 +280,14 @@ export default function ContasScreen() {
           value={monthNoteInput}
           onChangeText={setMonthNoteInput}
           multiline
-          editable={!!monthRow && status === 'success'}
+          editable={!!monthRow && status === 'success' && !readOnlyMonth}
           hint="Ex.: pagar com cartão de crédito."
           containerStyle={styles.fieldGap}
         />
         <PrimaryButton
           label="Salvar salário e nota do mês"
           onPress={() => void saveMonthMeta()}
-          disabled={!monthRow || monthMetaSaving || status !== 'success'}
+          disabled={!monthRow || monthMetaSaving || status !== 'success' || readOnlyMonth}
           loading={monthMetaSaving}
         />
       </View>
@@ -282,15 +312,32 @@ export default function ContasScreen() {
           accessibilityRole="button"
           accessibilityLabel="Adicionar conta"
           hitSlop={12}
-          disabled={status !== 'success' || !memberUserId}
+          disabled={status !== 'success' || !memberUserId || readOnlyMonth}
           onPress={openNew}
           style={({ pressed }) => [
             styles.backBtn,
-            { opacity: pressed || status !== 'success' || !memberUserId ? 0.4 : 1 },
+            {
+              opacity:
+                pressed || status !== 'success' || !memberUserId || readOnlyMonth ? 0.4 : 1,
+            },
           ]}>
           <FontAwesome name="plus" size={20} color={palette.tint} />
         </Pressable>
       </View>
+
+      {readOnlyMonth && status === 'success' ? (
+        <View
+          style={[
+            styles.readOnlyBanner,
+            { borderColor: palette.borderSubtle, backgroundColor: palette.surfaceSubtle },
+          ]}
+          accessibilityRole="text">
+          <Text style={[styles.readOnlyTitle, { color: palette.text }]}>Somente leitura</Text>
+          <Text style={[styles.readOnlyBody, { color: palette.caption }]}>
+            Este mês já encerrou no calendário. Você pode ver valores e status, mas não alterar dados.
+          </Text>
+        </View>
+      ) : null}
 
       {errorMessage ? (
         <Pressable
@@ -310,11 +357,15 @@ export default function ContasScreen() {
             contentContainerStyle={styles.memberChips}>
             {members.map((m) => {
               const sel = m.userId === memberUserId;
+              const online = presenceEnabled && onlineUserIds.has(m.userId);
               return (
                 <Pressable
                   key={m.userId}
                   accessibilityRole="button"
                   accessibilityState={{ selected: sel }}
+                  accessibilityLabel={
+                    online ? `${m.displayName}, online neste dispositivo ou sessão` : m.displayName
+                  }
                   onPress={() => setMemberUserId(m.userId)}
                   style={[
                     styles.memberChip,
@@ -323,9 +374,16 @@ export default function ContasScreen() {
                       backgroundColor: sel ? palette.surfaceSubtle : 'transparent',
                     },
                   ]}>
-                  <Text style={[styles.memberChipText, { color: sel ? palette.tint : palette.text }]}>
-                    {m.displayName}
-                  </Text>
+                  <View style={styles.memberChipInner}>
+                    {online ? (
+                      <View
+                        style={[styles.presenceDot, { backgroundColor: palette.balancePositive }]}
+                      />
+                    ) : null}
+                    <Text style={[styles.memberChipText, { color: sel ? palette.tint : palette.text }]}>
+                      {m.displayName}
+                    </Text>
+                  </View>
                 </Pressable>
               );
             })}
@@ -359,7 +417,9 @@ export default function ContasScreen() {
           renderItem={renderBill}
           ListEmptyComponent={
             <Text style={[styles.empty, { color: palette.caption }]}>
-              Nenhuma conta neste mês para {activeMemberName}. Toque em + para adicionar.
+              {readOnlyMonth
+                ? `Nenhuma conta neste mês para ${activeMemberName}.`
+                : `Nenhuma conta neste mês para ${activeMemberName}. Toque em + para adicionar.`}
             </Text>
           }
           ListFooterComponent={listFooter}
@@ -377,6 +437,7 @@ export default function ContasScreen() {
         members={members}
         monthHeading={monthHeading}
         authUserId={user?.id}
+        readOnly={readOnlyMonth}
         editing={editingBill}
         defaultAssigneeUserId={memberUserId}
         onSubmitCreate={createBill}
@@ -430,6 +491,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  readOnlyBanner: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 6,
+  },
+  readOnlyTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  readOnlyBody: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
   memberPick: {
     paddingHorizontal: 16,
     paddingBottom: 8,
@@ -448,6 +525,16 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 14,
+  },
+  memberChipInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  presenceDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   memberChipText: {
     fontSize: 14,

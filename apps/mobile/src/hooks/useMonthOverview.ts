@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { currentMonthKeyNow, shiftMonthKey } from '@/lib/month-key';
+import { currentMonthKeyNow, isReadOnlyMonth, shiftMonthKey } from '@/lib/month-key';
 import { loadMonthOverview } from '@/services/dashboard';
 import { mapPostgrestOrRpcError } from '@/services/supabase-errors';
 import type { FinanceContext, MemberMonthSnapshot } from '@/types/finance';
@@ -57,8 +57,11 @@ export function useMonthOverview(input: {
     setMonthLabel((k) => shiftMonthKey(k, 1));
   }, []);
 
+  const readOnlyMonth = isReadOnlyMonth(monthLabel);
+
   return {
     monthLabel,
+    readOnlyMonth,
     members,
     context,
     status,

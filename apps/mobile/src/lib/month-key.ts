@@ -19,6 +19,17 @@ export function currentMonthKeyNow(): string {
   return monthKeyFromDate(new Date());
 }
 
+/**
+ * Mês encerrado no calendário: `month_label` estritamente anterior ao mês corrente.
+ * Alinha PRD §10.3 (somente leitura após o 1º dia do mês seguinte) e §6.8 (meses anteriores).
+ * Meses futuros permanecem editáveis (PRD não restringe).
+ */
+export function isReadOnlyMonth(monthLabel: string, referenceDate: Date = new Date()): boolean {
+  assertMonthLabel(monthLabel);
+  const current = monthKeyFromDate(referenceDate);
+  return monthLabel < current;
+}
+
 export function shiftMonthKey(monthLabel: string, deltaMonths: number): string {
   assertMonthLabel(monthLabel);
   const [y, m] = monthLabel.split('-').map(Number) as [number, number];

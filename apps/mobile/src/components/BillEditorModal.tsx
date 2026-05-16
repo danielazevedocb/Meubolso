@@ -35,6 +35,8 @@ type Props = {
   members: MemberRef[];
   monthHeading: string;
   authUserId: string | undefined;
+  /** Mês encerrado: formulário bloqueado, apenas fechar. */
+  readOnly?: boolean;
   /** Bill being edited, or null for new. */
   editing: BillRow | null;
   defaultAssigneeUserId: string;
@@ -66,6 +68,7 @@ export function BillEditorModal({
   members,
   monthHeading,
   authUserId,
+  readOnly = false,
   editing,
   defaultAssigneeUserId,
   onSubmitCreate,
@@ -120,6 +123,7 @@ export function BillEditorModal({
     !!editing && !!authUserId && editing.user_id !== authUserId;
 
   const submit = handleSubmit(async (vals) => {
+    if (readOnly) return;
     const amount = parseMoneyInput(vals.amountInput);
     if (!Number.isFinite(amount) || amount < 0) {
       setError('amountInput', { message: 'Valor inválido.' });
@@ -169,6 +173,19 @@ export function BillEditorModal({
             {isGroup ? ' · toque em um membro abaixo para atribuir a conta' : ''}
           </Text>
 
+          {readOnly ? (
+            <View
+              style={[
+                styles.banner,
+                { borderColor: c.borderSubtle, backgroundColor: c.surfaceSubtle },
+              ]}>
+              <Text style={styles.bannerText}>
+                Este mês está em somente leitura. Não é possível criar ou alterar contas de meses
+                anteriores.
+              </Text>
+            </View>
+          ) : null}
+
           {foreignBill ? (
             <View
               style={[
@@ -198,8 +215,9 @@ export function BillEditorModal({
                       <Pressable
                         key={m.userId}
                         accessibilityRole="button"
-                        accessibilityState={{ selected: value === m.userId }}
+                        accessibilityState={{ selected: value === m.userId, disabled: readOnly }}
                         accessibilityLabel={`Atribuir a ${m.displayName}`}
+                        disabled={readOnly}
                         onPress={() => onChange(m.userId)}
                         style={[
                           styles.chip,
@@ -240,6 +258,7 @@ export function BillEditorModal({
                 onBlur={onBlur}
                 errorText={errors.company?.message}
                 autoCapitalize="sentences"
+                editable={!readOnly}
               />
             )}
           />
@@ -257,6 +276,7 @@ export function BillEditorModal({
                 errorText={errors.amountInput?.message}
                 hint="Use vírgula para centavos (ex.: 380,50)."
                 containerStyle={styles.fieldGap}
+                editable={!readOnly}
               />
             )}
           />
@@ -273,6 +293,7 @@ export function BillEditorModal({
                 errorText={errors.due_date?.message}
                 hint="Como preferir (ex.: 10/mai)."
                 containerStyle={styles.fieldGap}
+                editable={!readOnly}
               />
             )}
           />
@@ -287,6 +308,7 @@ export function BillEditorModal({
                   accessibilityLabel="Marcar como pago"
                   value={value}
                   onValueChange={onChange}
+                  disabled={readOnly}
                   trackColor={{ false: '#888', true: c.tint }}
                 />
               )}
@@ -305,18 +327,21 @@ export function BillEditorModal({
                 errorText={errors.note?.message}
                 multiline
                 containerStyle={styles.fieldGap}
+                editable={!readOnly}
               />
             )}
           />
 
-          <PrimaryButton
-            label={editing ? 'Salvar alterações' : 'Adicionar conta'}
-            loading={isSubmitting}
-            disabled={isSubmitting}
-            onPress={() => {
-              void submit().catch(() => {});
-            }}
-          />
+          {readOnly ? null : (
+            <PrimaryButton
+              label={editing ? 'Salvar alterações' : 'Adicionar conta'}
+              loading={isSubmitting}
+              disabled={isSubmitting}
+              onPress={() => {
+                void submit().catch(() => {});
+              }}
+            />
+          )}
 
           <Pressable
             accessibilityRole="button"

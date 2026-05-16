@@ -14,16 +14,27 @@ type Props = {
   snapshot: MemberMonthSnapshot;
   /** Abre a lista de contas do membro no mês atual. */
   onPress?: () => void;
+  /** Modo grupo: mostra bolinha quando o membro está com sessão ativa (Realtime Presence). */
+  showOnlineIndicator?: boolean;
+  isOnline?: boolean;
 };
 
-export function MemberMonthCard({ snapshot, onPress }: Props) {
+export function MemberMonthCard({ snapshot, onPress, showOnlineIndicator, isOnline }: Props) {
   const scheme = useColorScheme() ?? 'light';
   const c = Colors[scheme];
   const balanceColor = snapshot.balance < 0 ? c.balanceNegative : c.balancePositive;
 
   const card = (
     <View style={[styles.card, { backgroundColor: c.surfaceSubtle, borderColor: c.borderSubtle }]}>
-      <Text style={styles.name}>{snapshot.displayName}</Text>
+      <View style={styles.nameRow}>
+        <Text style={styles.name}>{snapshot.displayName}</Text>
+        {showOnlineIndicator && isOnline ? (
+          <View
+            accessibilityLabel={`${snapshot.displayName} está online`}
+            style={[styles.onlineDot, { backgroundColor: c.balancePositive }]}
+          />
+        ) : null}
+      </View>
       <View style={styles.row}>
         <Text style={[styles.label, { color: c.caption }]}>Total das contas</Text>
         <Text style={styles.value}>{money.format(snapshot.billsTotal)}</Text>
@@ -66,7 +77,18 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 17,
     fontWeight: '700',
+    flex: 1,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 4,
+  },
+  onlineDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   row: {
     flexDirection: 'row',

@@ -13,6 +13,7 @@ import { Text, View } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useGroupPresence } from '@/hooks/useGroupPresence';
 import { useMonthOverview } from '@/hooks/useMonthOverview';
 import { formatMonthHeadingPt } from '@/lib/month-key';
 
@@ -31,6 +32,7 @@ export default function HomeScreen() {
 
   const {
     monthLabel,
+    readOnlyMonth,
     members,
     context,
     status,
@@ -41,6 +43,15 @@ export default function HomeScreen() {
   } = useMonthOverview({
     userId: user?.id,
     selfDisplayName: selfName,
+  });
+
+  const presenceEnabled =
+    status === 'success' && context?.mode === 'group' && members.length > 1;
+
+  const onlineUserIds = useGroupPresence({
+    groupId: context?.mode === 'group' ? context.groupId : undefined,
+    userId: user?.id,
+    enabled: presenceEnabled,
   });
 
   const monthTitle = formatMonthHeadingPt(monthLabel);
@@ -70,6 +81,20 @@ export default function HomeScreen() {
             <FontAwesome name="chevron-right" size={18} color={palette.tint} />
           </Pressable>
         </View>
+
+        {readOnlyMonth ? (
+          <View
+            style={[
+              styles.readOnlyBanner,
+              { borderColor: palette.borderSubtle, backgroundColor: palette.surfaceSubtle },
+            ]}
+            accessibilityRole="text">
+            <Text style={[styles.readOnlyTitle, { color: palette.text }]}>Somente leitura</Text>
+            <Text style={[styles.readOnlyBody, { color: palette.caption }]}>
+              Meses anteriores podem ser visualizados, mas não editados.
+            </Text>
+          </View>
+        ) : null}
 
         {context && status === 'success' ? (
           <Text style={[styles.modeHint, { color: palette.caption }]}>
@@ -117,6 +142,8 @@ export default function HomeScreen() {
               <MemberMonthCard
                 key={m.userId}
                 snapshot={m}
+                showOnlineIndicator={presenceEnabled}
+                isOnline={onlineUserIds.has(m.userId)}
                 onPress={() =>
                   router.push({
                     pathname: '/(tabs)/contas',
@@ -131,6 +158,7 @@ export default function HomeScreen() {
         <View style={styles.actions}>
           <PrimaryButton
             label="Adicionar nova conta"
+            disabled={readOnlyMonth}
             onPress={() =>
               router.push({
                 pathname: '/(tabs)/contas',
@@ -189,6 +217,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '700',
+  },
+  readOnlyBanner: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    padding: 14,
+    gap: 6,
+  },
+  readOnlyTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  readOnlyBody: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   modeHint: {
     fontSize: 14,
