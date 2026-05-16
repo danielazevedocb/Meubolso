@@ -11,7 +11,7 @@ const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 function assertSupabaseEnv(): { url: string; key: string } {
   if (!supabaseUrl?.trim() || !supabaseKey?.trim()) {
     throw new Error(
-      'Supabase não configurado: defina EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_ANON_KEY (copie apps/mobile/.env.example para apps/mobile/.env e preencha com os valores do Dashboard).',
+      'Supabase não configurado: defina EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_ANON_KEY (copie src/.env.example para src/.env e preencha com os valores do Dashboard).',
     );
   }
   return { url: supabaseUrl.trim(), key: supabaseKey.trim() };

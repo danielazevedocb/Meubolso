@@ -1,4 +1,4 @@
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet } from 'react-native';
 
@@ -94,7 +94,6 @@ export default function MyGroupsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Meus grupos' }} />
       <View style={styles.container}>
         <Text style={styles.title}>Escolha um grupo</Text>
         <Text style={styles.sub}>

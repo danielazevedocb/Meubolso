@@ -20,10 +20,10 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 
 | Tarefa | Status |
 |--------|--------|
-| Configurar monorepo/app Expo (SDK, TypeScript, ESLint/Prettier) | concluído |
+| Configurar app Expo na raiz (SDK, TypeScript, ESLint/Prettier) | concluído |
 | Configurar variáveis de ambiente (ex.: `EXPO_PUBLIC_SUPABASE_*`) sem commitar secrets | concluído |
-| Conectar repositório a projeto Supabase (projeto dev/staging) | concluído — cliente (`apps/mobile/src/lib/supabase.ts`) + `.env.example`; preencher `.env` local com URL/chave do Dashboard |
-| Documentar setup local em README (sem secrets) | concluído — `apps/mobile/README.md` (+ env via `.env.example`) |
+| Conectar repositório a projeto Supabase (projeto dev/staging) | concluído — cliente (`src/lib/supabase.ts`) + `.env.example`; preencher `.env` local com URL/chave do Dashboard |
+| Documentar setup local em README (sem secrets) | concluído — `README.md` na raiz (+ env via `.env.example`) |
 
 ---
 
@@ -45,7 +45,7 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 
 | Tarefa | Status |
 |--------|--------|
-| Integrar Supabase Auth (e-mail/senha) no app | concluído — `apps/mobile/app/(auth)/sign-in.tsx`, `(auth)/sign-up.tsx`, cliente `src/lib/supabase.ts` |
+| Integrar Supabase Auth (e-mail/senha) no app | concluído — `app/(auth)/sign-in.tsx`, `(auth)/sign-up.tsx`, cliente `src/lib/supabase.ts` |
 | Fluxo de cadastro e login com validação (Zod/RHF conforme regras) | concluído — `react-hook-form` + `zod` + schemas em `src/forms/auth-group-schemas.ts` |
 | Sessão persistente segura (ex.: SecureStore onde aplicável) | concluído — persistência oficial com AsyncStorage (`supabase.ts`); avaliar SecureStore numa revisão posterior de modelo de tokens |
 | Gating de rotas Expo Router (onboarding autenticado vs. convidado) | concluído — `Stack.Protected` + `AuthProvider` em `app/_layout.tsx`; fluxos `(auth)` / `(onboarding)` / `(tabs)` |
@@ -82,7 +82,7 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 
 | Tarefa | Status |
 |--------|--------|
-| Configurar Jest + @testing-library/react-native | concluído — `apps/mobile/jest.config.js`, `jest.setup.ts`, scripts `test` / `test:watch` |
+| Configurar Jest + @testing-library/react-native | concluído — `jest.config.js`, `jest.setup.ts`, scripts `test` / `test:watch` |
 | Testes unitários/integrados para hooks e services críticos | concluído (smoke) — `src/lib/__tests__/month-key.test.ts`, `bill-company.test.ts`; `src/components/__tests__/PrimaryButton.test.tsx` |
 | E2E (Detox ou estratégia definida) para login + fluxo principal | pendente — **E2E não configurado** (sem Detox/Maestro no repo); apenas Jest |
 | Checagens manuais ou automatizadas de acessibilidade (RN) | parcial — checklist aplicada às telas-chave (rótulos/hitSlop em botões só ícone, banner de erro, hints em `FormTextField`, modal de duplicação); revisão completa de foco/teclado e modais avançados fica para próximo passo |
@@ -93,14 +93,14 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 
 | Tarefa | Status |
 |--------|--------|
-| Estratégia de logs/crash em produção (sem PII indevida) | parcial — princípios em `apps/mobile/README.md` § Observabilidade; sem SDK de crash/analytics integrado |
-| Pipeline EAS Build (iOS/Android) e critérios de release v1.0 | concluído — `apps/mobile/eas.json`, scripts `eas:build` / `eas:submit`, checklist em `apps/mobile/README.md` |
+| Estratégia de logs/crash em produção (sem PII indevida) | parcial — princípios em `README.md` § Observabilidade; sem SDK de crash/analytics integrado |
+| Pipeline EAS Build (iOS/Android) e critérios de release v1.0 | concluído — `eas.json`, scripts `eas:build` / `eas:submit`, checklist em `README.md` |
 
 ---
 
 ## Critérios de aceitação (PRD §11)
 
-Validação contra código (`apps/mobile`) + migrações (`supabase/migrations`). Legenda: **concluído** | **parcial** | **pendente**.
+Validação contra código (`src`) + migrações (`supabase/migrations`). Legenda: **concluído** | **parcial** | **pendente**.
 
 | # | Tarefa | Status | Notas |
 |---|--------|--------|--------|

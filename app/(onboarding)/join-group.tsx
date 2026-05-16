@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import {
   KeyboardAvoidingView,
@@ -92,7 +92,6 @@ export default function JoinGroupScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Entrar com código' }} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

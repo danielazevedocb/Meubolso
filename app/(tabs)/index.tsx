@@ -1,7 +1,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 
 import { HeaderBackButton } from '@react-navigation/elements';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { MemberMonthCard } from '@/components/MemberMonthCard';
 import { DuplicateBillsModal } from '@/components/DuplicateBillsModal';
@@ -23,6 +23,7 @@ import { Text, View } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useSolidStackHeader } from '@/hooks/useSolidStackHeader';
 import { useDuplicateMonthImport } from '@/hooks/useDuplicateMonthImport';
 import { useGroupPresence } from '@/hooks/useGroupPresence';
 import { useMonthOverview } from '@/hooks/useMonthOverview';
@@ -36,7 +37,6 @@ const money = new Intl.NumberFormat('pt-BR', {
 });
 
 export default function HomeScreen() {
-  const navigation = useNavigation();
   const { profile, user, signOut, refreshOnboarding, openOnboardingChooser } = useAuth();
   const scheme = useColorScheme() ?? 'light';
   const palette = Colors[scheme];
@@ -166,40 +166,26 @@ export default function HomeScreen() {
     return context?.mode === 'solo' || soloModeFromPrefs;
   }, [context?.mode, soloModeFromPrefs]);
 
-  useLayoutEffect(() => {
-    if (showHomeBackButton) {
-      navigation.setOptions({
-        headerTintColor: palette.text,
-        headerStyle: { backgroundColor: palette.surfaceSubtle },
-        headerLeft: (headerProps) => (
-          <HeaderBackButton
-            {...headerProps}
-            displayMode="minimal"
-            tintColor={palette.text}
-            accessibilityLabel={
-              context?.mode === 'group'
-                ? 'Voltar para escolher grupo ou modo de uso'
-                : 'Voltar para escolher modo de uso'
-            }
-            onPress={() => void handleHomeBackToOnboarding()}
-          />
-        ),
-      });
-    } else {
-      navigation.setOptions({
-        headerTintColor: undefined,
-        headerStyle: undefined,
-        headerLeft: undefined,
-      });
-    }
-  }, [
-    navigation,
-    showHomeBackButton,
-    palette.text,
-    palette.surfaceSubtle,
-    handleHomeBackToOnboarding,
-    context?.mode,
-  ]);
+  useSolidStackHeader(
+    showHomeBackButton
+      ? {
+          headerLeft: (headerProps) => (
+            <HeaderBackButton
+              {...headerProps}
+              displayMode="minimal"
+              tintColor={palette.text}
+              accessibilityLabel={
+                context?.mode === 'group'
+                  ? 'Voltar para escolher grupo ou modo de uso'
+                  : 'Voltar para escolher modo de uso'
+              }
+              onPress={() => void handleHomeBackToOnboarding()}
+            />
+          ),
+        }
+      : { headerLeft: undefined },
+    [showHomeBackButton, palette.text, handleHomeBackToOnboarding, context?.mode],
+  );
 
   const groupBillsTotal = useMemo(
     () => members.reduce((acc, m) => acc + m.billsTotal, 0),

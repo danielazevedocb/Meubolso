@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, Stack } from 'expo-router';
+import { Link } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
 import Animated, {
@@ -12,7 +12,6 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useState } from 'react';
 
 import { FormTextField } from '@/components/FormTextField';
@@ -27,7 +26,6 @@ import { mapAuthError } from '@/services/supabase-errors';
 const STAGGER = 70;
 
 export default function SignInScreen() {
-  const insets = useSafeAreaInsets();
   const [banner, setBanner] = useState<string | null>(null);
 
   const pulse = useSharedValue(1);
@@ -72,20 +70,12 @@ export default function SignInScreen() {
   });
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          contentContainerStyle={[
-            styles.scroll,
-            {
-              paddingTop: Math.max(insets.top, 16),
-              paddingBottom: Math.max(insets.bottom, 24),
-            },
-          ]}
-          keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled">
           <View style={styles.centerBlock}>
             <Animated.View
               entering={FadeIn.duration(650).easing(Easing.out(Easing.cubic))}
@@ -166,9 +156,8 @@ export default function SignInScreen() {
             </Animated.View>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -180,6 +169,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 20,
+    paddingVertical: 28,
   },
   centerBlock: {
     width: '100%',

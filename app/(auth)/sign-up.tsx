@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, Stack, useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import {
   Keyboard,
@@ -9,7 +9,7 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 
 import { FormTextField } from '@/components/FormTextField';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -24,7 +24,7 @@ const RESEND_COOLDOWN_MS = 60_000;
 
 export default function SignUpScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const navHeaderHeight = useHeaderHeight();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [banner, setBanner] = useState<string | null>(null);
   /** Cadastro OK mas o projeto exige confirmar e-mail (sem sessão ainda). */
@@ -177,23 +177,20 @@ export default function SignUpScreen() {
   });
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}>
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-          contentContainerStyle={[
-            styles.scroll,
-            {
-              paddingTop: Math.max(insets.top, 16),
-              paddingBottom: Math.max(insets.bottom, 24) + keyboardHeight,
-              justifyContent: keyboardHeight > 0 ? 'flex-start' : 'center',
-            },
-          ]}>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? navHeaderHeight : 0}>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        contentContainerStyle={[
+          styles.scroll,
+          {
+            paddingBottom: 24 + keyboardHeight,
+            justifyContent: keyboardHeight > 0 ? 'flex-start' : 'center',
+          },
+        ]}>
           <View style={styles.card}>
             {awaitingEmailVerify ? (
               <>
@@ -325,9 +322,8 @@ export default function SignUpScreen() {
               </>
             )}
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -338,6 +334,7 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     paddingHorizontal: 20,
+    paddingVertical: 28,
   },
   card: {
     maxWidth: 480,

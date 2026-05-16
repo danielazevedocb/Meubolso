@@ -29,7 +29,7 @@ Documento de referência para agentes e desenvolvedores: contexto do produto, re
 | `04-expo-quality-testing-observability.mdc` | App + testes | Lint, Jest + Testing Library, E2E (ex.: Detox), a11y RN, observabilidade. |
 | `03-tests.mdc` | `tests/**/*.py`, etc. | Testes **Python** — secundário para o stack atual. |
 | `05-frontend-sem-cara-de-ia.mdc` | Front web/mobile (globs) | Microcopy, hierarquia visual, evitar UI genérica. |
-| `02-nextjs.mdc`, `02-shadcn.mdc` | Web Next | **Não é stack do PRD v1**; usar só se o monorepo incluir web. |
+| `02-nextjs.mdc`, `02-shadcn.mdc` | Web Next | **Não é stack do PRD v1**; usar só se o repositório incluir web. |
 | `02-fastapi.mdc`, `02-django.mdc`, `03-nestjs.mdc` | Respectivas stacks | **Opcional** se houver API fora do Supabase. |
 | `04-prisma.mdc` | Prisma no repo | PRD cita Postgres via Supabase; Prisma é **opcional** (client direto ou ORM). |
 | `saas.mdc` | SaaS/multi-tenant | Avaliar alinhamento com grupos/RLS antes de mudanças grandes. |

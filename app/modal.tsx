@@ -10,7 +10,11 @@ import { Text, View } from '@/components/Themed';
 import { aboutLinks, isConfiguredExternalUrl } from '@/constants/about';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { stackHeaderScreenOptions, type AppColorScheme } from '@/navigation/theme';
+import {
+  mergeStackHeaderOptions,
+  statusBarStyle,
+  type AppColorScheme,
+} from '@/navigation/theme';
 
 function resolveAppVersion(): string {
   return (
@@ -64,9 +68,7 @@ export default function ModalScreen() {
     <>
       <Stack.Screen
         options={{
-          ...stackHeaderScreenOptions(appScheme),
-          title: 'Sobre',
-          headerShown: true,
+          ...mergeStackHeaderOptions(appScheme, { title: 'Sobre' }),
           headerRight: () => (
             <Pressable
               accessibilityRole="button"
@@ -117,7 +119,7 @@ export default function ModalScreen() {
             ))}
           </View>
         ) : null}
-        <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
+        <StatusBar style={statusBarStyle(appScheme)} />
       </View>
     </>
   );

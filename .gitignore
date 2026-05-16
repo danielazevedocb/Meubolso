@@ -1,22 +1,45 @@
-# Secrets e ambiente (nunca commitar; manter *.example versionados)
-**/.env
-**/.env.*
-!**/.env.example
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# Dependências e artefatos de build comuns em monorepos
+# dependencies
 node_modules/
+
+# Expo
+.expo/
 dist/
-build/
-coverage/
+web-build/
+expo-env.d.ts
 
-# SO / editor comum
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
 .DS_Store
-Thumbs.db
-*.log
+*.pem
 
-# Cursor / IDE local
+# local env files (never commit secrets)
+.env
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
 .cursor/
-
-# Supabase CLI artefatos locais
-supabase/.temp/
-
+docs/

@@ -28,7 +28,7 @@ Instruções numeradas para executar durante a implementação do **FinançasPes
 
 **MCP:** Context7 (Expo, Router).
 
-**Task.md:** itens em "Setup e infraestrutura" relevantes (ex.: configurar monorepo/app Expo).
+**Task.md:** itens em "Setup e infraestrutura" relevantes (ex.: configurar app Expo na raiz do repositório).
 
 **Ao terminar:** atualizar `docs/task.md` → **concluído**; **commit** `chore:` ou `feat:` conforme o que foi entregue.
 

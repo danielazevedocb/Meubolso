@@ -5,7 +5,7 @@ import { Pressable } from 'react-native';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { stackHeaderScreenOptions, type AppColorScheme } from '@/navigation/theme';
+import { mergeStackHeaderOptions, type AppColorScheme } from '@/navigation/theme';
 
 export default function OnboardingLayout() {
   const { session } = useAuth();
@@ -13,11 +13,28 @@ export default function OnboardingLayout() {
   const palette = Colors[scheme];
 
   return (
-    <Stack initialRouteName="index" screenOptions={stackHeaderScreenOptions(scheme)}>
+    <Stack initialRouteName="index" screenOptions={mergeStackHeaderOptions(scheme)}>
+      <Stack.Screen
+        name="create-group"
+        options={mergeStackHeaderOptions(scheme, { title: 'Criar grupo' })}
+      />
+      <Stack.Screen
+        name="join-group"
+        options={mergeStackHeaderOptions(scheme, { title: 'Entrar com código' })}
+      />
+      <Stack.Screen
+        name="my-groups"
+        options={mergeStackHeaderOptions(scheme, { title: 'Meus grupos' })}
+      />
+      <Stack.Screen
+        name="conta"
+        options={mergeStackHeaderOptions(scheme, { title: 'Conta' })}
+      />
       <Stack.Screen
         name="index"
-        options={{
+        options={mergeStackHeaderOptions(scheme, {
           title: 'Como você vai usar?',
+          headerBackVisible: false,
           headerRight:
             session != null
               ? () => (
@@ -44,7 +61,7 @@ export default function OnboardingLayout() {
                   </Pressable>
                 )
               : undefined,
-        }}
+        })}
       />
     </Stack>
   );

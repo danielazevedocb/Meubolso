@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
+
 import { StyleSheet } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 

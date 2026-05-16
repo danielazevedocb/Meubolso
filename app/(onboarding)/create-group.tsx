@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import {
   Alert,
@@ -64,7 +64,6 @@ export default function CreateGroupScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Criar grupo' }} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

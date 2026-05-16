@@ -4,8 +4,11 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import 'react-native-reanimated';
 
@@ -13,7 +16,12 @@ import { AuthProvider } from '@/providers/AuthProvider';
 import { useAuth } from '@/hooks/useAuth';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { buildNavigationTheme, type AppColorScheme } from '@/navigation/theme';
+import {
+  buildNavigationTheme,
+  statusBarBackgroundColor,
+  statusBarStyle,
+  type AppColorScheme,
+} from '@/navigation/theme';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -65,22 +73,31 @@ function RootGate() {
   const gatedOnboarding = Boolean(session && (!onboardingComplete || reopenOnboarding));
   const gatedApp = Boolean(session && onboardingComplete && !reopenOnboarding);
 
+  const statusBarBg = statusBarBackgroundColor(scheme);
+  const barStyle = statusBarStyle(scheme);
+
   return (
-    <ThemeProvider value={navigationTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Protected guard={gatedAuth}>
-          <Stack.Screen name="(auth)" />
-        </Stack.Protected>
+    <SafeAreaProvider>
+      <StatusBar
+        style={barStyle}
+        {...(Platform.OS === 'android' ? { backgroundColor: statusBarBg } : null)}
+      />
+      <ThemeProvider value={navigationTheme}>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Protected guard={gatedAuth}>
+            <Stack.Screen name="(auth)" />
+          </Stack.Protected>
 
-        <Stack.Protected guard={gatedOnboarding}>
-          <Stack.Screen name="(onboarding)" />
-        </Stack.Protected>
+          <Stack.Protected guard={gatedOnboarding}>
+            <Stack.Screen name="(onboarding)" />
+          </Stack.Protected>
 
-        <Stack.Protected guard={gatedApp}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-        </Stack.Protected>
-      </Stack>
-    </ThemeProvider>
+          <Stack.Protected guard={gatedApp}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          </Stack.Protected>
+        </Stack>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
