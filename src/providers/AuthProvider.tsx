@@ -1,6 +1,5 @@
 import type { Session, User } from '@supabase/supabase-js';
-import { router } from 'expo-router';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { supabase } from '@/lib/supabase';
 import { setPreferredGroupId } from '@/lib/active-group-preference';
@@ -38,8 +37,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
 
   const user = session?.user ?? null;
-  const hubNavigationDoneRef = useRef(false);
-  const lastSessionUserIdRef = useRef<string | null>(null);
 
   const hydrateProfile = useCallback(async (authUser: User) => {
     let profileRow = await fetchProfile(authUser.id);
@@ -80,8 +77,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!user?.id) {
         setProfile(null);
         setRoutingReady(true);
-        hubNavigationDoneRef.current = false;
-        lastSessionUserIdRef.current = null;
         return;
       }
 
@@ -99,18 +94,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, [initialized, user, hydrateProfile]);
-
-  useEffect(() => {
-    if (!initialized || !routingReady || !user?.id) return;
-
-    const isNewSession = lastSessionUserIdRef.current !== user.id;
-    lastSessionUserIdRef.current = user.id;
-
-    if (!hubNavigationDoneRef.current || isNewSession) {
-      hubNavigationDoneRef.current = true;
-      router.replace('/(app)');
-    }
-  }, [initialized, routingReady, user?.id]);
 
   const refreshProfile = useCallback(async () => {
     if (!user) {
@@ -138,8 +121,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await setSoloPreference(false);
     await setPreferredGroupId(null);
     setProfile(null);
-    hubNavigationDoneRef.current = false;
-    lastSessionUserIdRef.current = null;
   }, []);
 
   const value = useMemo<AuthContextValue>(
