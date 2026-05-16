@@ -1,14 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, Stack } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text as RNText,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
 import Animated, {
   Easing,
   FadeIn,
@@ -23,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useState } from 'react';
 
 import { FormTextField } from '@/components/FormTextField';
+import { MeubolsoWordmark } from '@/components/MeubolsoWordmark';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Text, View } from '@/components/Themed';
 import type { SignInValues } from '@/forms/auth-group-schemas';
@@ -97,8 +91,7 @@ export default function SignInScreen() {
               entering={FadeIn.duration(650).easing(Easing.out(Easing.cubic))}
               style={styles.brandRow}>
               <Animated.View style={[styles.brandInner, brandPulseStyle]}>
-                <RNText style={styles.brandMeu}>Meu</RNText>
-                <RNText style={styles.brandBolso}>Bolso</RNText>
+                <MeubolsoWordmark />
               </Animated.View>
             </Animated.View>
 
@@ -199,20 +192,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
   },
   brandInner: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  brandMeu: {
-    fontSize: 36,
-    fontWeight: '200',
-    letterSpacing: 2,
-    color: '#ffffff',
-  },
-  brandBolso: {
-    fontSize: 36,
-    fontWeight: '800',
-    letterSpacing: 1,
-    color: '#2f95dc',
+    alignItems: 'center',
   },
   card: {
     maxWidth: 480,

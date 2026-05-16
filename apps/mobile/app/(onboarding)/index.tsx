@@ -1,10 +1,19 @@
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
+import { MeubolsoWordmark } from '@/components/MeubolsoWordmark';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/hooks/useAuth';
-import { useState } from 'react';
+
+const ENTER_DURATION = 420;
+const STAGGER_MS = 74;
+
+function enterDown(delay: number) {
+  return FadeInDown.duration(ENTER_DURATION).delay(delay);
+}
 
 export default function OnboardingHomeScreen() {
   const { confirmSoloMode } = useAuth();
@@ -25,47 +34,67 @@ export default function OnboardingHomeScreen() {
   };
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'Como você vai usar?' }} />
-      <View style={styles.container}>
-        <Text style={styles.title}>Bem-vindo ao Meubolso</Text>
+    <View style={styles.container}>
+      <Animated.View entering={enterDown(0)}>
+        <View
+          style={styles.titleRow}
+          accessible
+          accessibilityRole="header"
+          accessibilityLabel="Bem-vindo ao Meubolso">
+          <Text style={styles.welcomePrefix} importantForAccessibility="no">
+            Bem-vindo ao{' '}
+          </Text>
+          <MeubolsoWordmark fontSize={24} variant="inline" />
+        </View>
+      </Animated.View>
+      <Animated.View entering={enterDown(STAGGER_MS)}>
         <Text style={styles.sub}>
-          Escolha criar um grupo, entrar com código, rever os grupos em que já participa ou usar no modo
-          solo (sem grupo).
+          Escolha criar um grupo, entrar com código, rever os grupos em que já participa ou usar no modo solo
+          (sem grupo).
         </Text>
+      </Animated.View>
 
-        {banner ? (
+      {banner ? (
+        <Animated.View entering={FadeIn.duration(260)}>
           <Text accessibilityRole="alert" style={styles.banner}>
             {banner}
           </Text>
-        ) : null}
+        </Animated.View>
+      ) : null}
 
+      <Animated.View entering={enterDown(STAGGER_MS * 2)}>
         <PrimaryButton
           label="Criar um grupo"
           disabled={busy}
           onPress={() => router.push('/(onboarding)/create-group')}
         />
-        <View style={styles.spacer} />
+      </Animated.View>
+      <View style={styles.spacer} />
+      <Animated.View entering={enterDown(STAGGER_MS * 3)}>
         <PrimaryButton
           label="Entrar com código de convite"
           disabled={busy}
           onPress={() => router.push('/(onboarding)/join-group')}
         />
-        <View style={styles.spacer} />
+      </Animated.View>
+      <View style={styles.spacer} />
+      <Animated.View entering={enterDown(STAGGER_MS * 4)}>
         <PrimaryButton
           label="Meus grupos"
           disabled={busy}
           onPress={() => router.push('/(onboarding)/my-groups')}
         />
-        <View style={styles.spacer} />
+      </Animated.View>
+      <View style={styles.spacer} />
+      <Animated.View entering={enterDown(STAGGER_MS * 5)}>
         <PrimaryButton
           label="Usar solo (sem grupo)"
           loading={busy}
           disabled={busy}
           onPress={() => void handleSolo()}
         />
-      </View>
-    </>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -76,10 +105,18 @@ const styles = StyleSheet.create({
     paddingVertical: 28,
     justifyContent: 'center',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
+  titleRow: {
+    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'baseline',
     marginBottom: 10,
+  },
+  welcomePrefix: {
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   sub: {
     fontSize: 15,

@@ -63,6 +63,14 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="perfil"
+        options={{
+          href: null,
+          title: 'Conta',
+          tabBarStyle: { display: 'none' },
+        }}
+      />
+      <Tabs.Screen
         name="add-account"
         options={{
           href: null,

@@ -585,24 +585,28 @@ export default function ContasScreen() {
                   accessibilityLabel={
                     online ? `${m.displayName}, online neste dispositivo ou sessão` : m.displayName
                   }
+                  android_ripple={{ color: 'rgba(128, 128, 128, 0.22)', foreground: true }}
                   onPress={() => setMemberUserId(m.userId)}
                   style={[
                     styles.memberChip,
                     {
                       borderColor: sel ? palette.tint : palette.borderSubtle,
-                      backgroundColor: sel ? palette.surfaceSubtle : 'transparent',
+                      borderWidth: sel ? 2 : StyleSheet.hairlineWidth,
+                      backgroundColor: 'transparent',
                     },
                   ]}>
-                  <View style={styles.memberChipInner}>
+                  <RNView style={styles.memberChipInner}>
                     {online ? (
-                      <View
+                      <RNView
                         style={[styles.presenceDot, { backgroundColor: palette.balancePositive }]}
                       />
                     ) : null}
-                    <Text style={[styles.memberChipText, { color: sel ? palette.tint : palette.text }]}>
+                    <Text
+                      suppressHighlighting
+                      style={[styles.memberChipText, { color: palette.text }]}>
                       {m.displayName}
                     </Text>
-                  </View>
+                  </RNView>
                 </Pressable>
               );
             })}
@@ -814,10 +818,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   memberChip: {
-    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 14,
+    overflow: 'hidden',
   },
   memberChipInner: {
     flexDirection: 'row',
@@ -831,7 +835,7 @@ const styles = StyleSheet.create({
   },
   memberChipText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   singleMemberPill: {
     alignSelf: 'flex-start',

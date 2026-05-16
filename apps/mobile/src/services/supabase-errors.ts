@@ -16,6 +16,10 @@ export function mapAuthError(error: AuthError | null | undefined): string {
   if (msg.includes('invalid login credentials')) return 'E-mail ou senha incorretos.';
   if (msg.includes('email not confirmed')) return 'Confirme seu e-mail antes de entrar.';
   if (msg.includes('user already registered')) return 'Este e-mail já está cadastrado. Entre na conta ou use outro e-mail.';
+  if (msg.includes('different from the old password'))
+    return 'A nova senha precisa ser diferente da senha atual.';
+  if (msg.includes('reauthentication') || msg.includes('same refresh token'))
+    return 'Por segurança, saia e entre de novo antes de alterar a senha.';
   if (msg.includes('password')) return 'Senha não atende aos requisitos. Use ao menos 8 caracteres.';
   return error.message;
 }
