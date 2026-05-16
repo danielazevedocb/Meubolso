@@ -31,10 +31,10 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 
 | Tarefa | Status |
 |--------|--------|
-| Criar schema: `users`, `groups`, `group_members`, `months`, `bills` (PRD §7) | pendente |
-| Definir índices e constraints (invite_code único, FKs, limites de grupo) | pendente |
-| Implementar RLS e políticas por `user_id` / `group_id` (leitura/escrita segura) | pendente |
-| Habilitar **Realtime** nas tabelas necessárias (contas, meses, membros) | pendente |
+| Criar schema: `users`, `groups`, `group_members`, `months`, `bills` (PRD §7) | concluído — impl. via `profiles` (`id` FK `auth.users`) + `groups`, `group_members`, `months`, `bills` em `supabase/migrations/20260515153000_finance_core_schema.sql` |
+| Definir índices e constraints (invite_code único, FKs, limites de grupo) | concluído — índices parciais (solo vs grupo), uniques compostos bills, único por mês/membro/grupo |
+| Implementar RLS e políticas por `user_id` / `group_id` (leitura/escrita segura) | concluído — RLS nas tabelas acima + `lookup_group_by_invite` para fluxo do código sem vazar outros grupos; proteção ao alterar `invite_code` apenas owner |
+| Habilitar **Realtime** nas tabelas necessárias (contas, meses, membros) | concluído — `ALTER PUBLICATION supabase_realtime ADD TABLE bills, months, group_members` na mesma migration (validar no Dashboard se necessário) |
 | Seeds ou dados de fixture para desenvolvimento | pendente |
 | (Opcional) Adotar Prisma ou manter SQL/migrations via Supabase CLI | pendente |
 
