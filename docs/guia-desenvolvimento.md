@@ -186,7 +186,7 @@ Instruções numeradas para executar durante a implementação do **FinançasPes
 
 ---
 
-### Prompt 11 — Observabilidade, builds EAS e critérios PRÁ §11
+### Prompt 11 — Observabilidade, builds EAS e critérios de aceitação PRD §11
 
 **Objetivo:** revisar todos os critérios de aceitação; configurar build; documentar release.
 
