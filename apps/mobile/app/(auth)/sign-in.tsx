@@ -1,7 +1,26 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, Stack } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text as RNText,
+} from 'react-native';
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect, useState } from 'react';
 
 import { FormTextField } from '@/components/FormTextField';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -10,10 +29,35 @@ import type { SignInValues } from '@/forms/auth-group-schemas';
 import { signInSchema } from '@/forms/auth-group-schemas';
 import { supabase } from '@/lib/supabase';
 import { mapAuthError } from '@/services/supabase-errors';
-import { useState } from 'react';
+
+const STAGGER = 70;
 
 export default function SignInScreen() {
+  const insets = useSafeAreaInsets();
   const [banner, setBanner] = useState<string | null>(null);
+
+  const pulse = useSharedValue(1);
+
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1.04, {
+          duration: 2600,
+          easing: Easing.inOut(Easing.ease),
+        }),
+        withTiming(1, {
+          duration: 2600,
+          easing: Easing.inOut(Easing.ease),
+        }),
+      ),
+      -1,
+      false,
+    );
+  }, [pulse]);
+
+  const brandPulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value }],
+  }));
 
   const {
     control,
@@ -35,66 +79,99 @@ export default function SignInScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Entrar' }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scroll}>
-          <View style={styles.card}>
-            <Text style={styles.title}>Entrar</Text>
-            <Text style={styles.sub}>Use seu e-mail e senha para acessar o Meubolso.</Text>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scroll,
+            {
+              paddingTop: Math.max(insets.top, 16),
+              paddingBottom: Math.max(insets.bottom, 24),
+            },
+          ]}
+          keyboardShouldPersistTaps="handled">
+          <View style={styles.centerBlock}>
+            <Animated.View
+              entering={FadeIn.duration(650).easing(Easing.out(Easing.cubic))}
+              style={styles.brandRow}>
+              <Animated.View style={[styles.brandInner, brandPulseStyle]}>
+                <RNText style={styles.brandMeu}>Meu</RNText>
+                <RNText style={styles.brandBolso}>Bolso</RNText>
+              </Animated.View>
+            </Animated.View>
 
+            <View style={styles.card}>
             {banner ? (
-              <Text accessibilityRole="alert" style={styles.banner}>
-                {banner}
-              </Text>
+              <Animated.View entering={FadeIn.duration(300)}>
+                <Text accessibilityRole="alert" style={styles.banner}>
+                  {banner}
+                </Text>
+              </Animated.View>
             ) : null}
 
-            <Controller
-              control={control}
-              name="email"
-              render={({ field: { value, onChange, onBlur } }) => (
-                <FormTextField
-                  label="E-mail"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
-                  value={value}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  containerStyle={styles.field}
-                  errorText={errors.email?.message}
-                />
-              )}
-            />
+            <Animated.View entering={FadeInDown.delay(STAGGER).duration(450)}>
+              <Controller
+                control={control}
+                name="email"
+                render={({ field: { value, onChange, onBlur } }) => (
+                  <FormTextField
+                    label="E-mail"
+                    placeholder="Digite seu e-mail"
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    keyboardType="email-address"
+                    value={value}
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    containerStyle={styles.field}
+                    errorText={errors.email?.message}
+                  />
+                )}
+              />
+            </Animated.View>
 
-            <Controller
-              control={control}
-              name="password"
-              render={({ field: { value, onChange, onBlur } }) => (
-                <FormTextField
-                  label="Senha"
-                  secureTextEntry
-                  autoCapitalize="none"
-                  textContentType="password"
-                  value={value}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  containerStyle={styles.field}
-                  errorText={errors.password?.message}
-                />
-              )}
-            />
+            <Animated.View entering={FadeInDown.delay(STAGGER * 2).duration(450)}>
+              <Controller
+                control={control}
+                name="password"
+                render={({ field: { value, onChange, onBlur } }) => (
+                  <FormTextField
+                    label="Senha"
+                    placeholder="Digite sua senha"
+                    secureTextEntry
+                    passwordToggle
+                    autoCapitalize="none"
+                    textContentType="password"
+                    value={value}
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    containerStyle={styles.field}
+                    errorText={errors.password?.message}
+                  />
+                )}
+              />
+            </Animated.View>
 
-            <PrimaryButton
-              label="Entrar"
-              loading={isSubmitting}
-              onPress={() => void onSubmit()}
-            />
+            <Animated.View
+              entering={FadeInDown.delay(STAGGER * 3).duration(450)}
+              style={styles.btnWrap}>
+              <PrimaryButton
+                label="Entrar"
+                loading={isSubmitting}
+                onPress={() => void onSubmit()}
+              />
+            </Animated.View>
 
-            <Link href="/(auth)/sign-up" accessibilityRole="link" style={styles.link}>
-              Novo aqui? Criar conta
-            </Link>
+            <Animated.View entering={FadeInDown.delay(STAGGER * 4).duration(450)}>
+              <Link href="/(auth)/sign-up" asChild>
+                <Pressable accessibilityRole="link">
+                  <Text style={styles.link}>Novo aqui? Criar conta</Text>
+                </Pressable>
+              </Link>
+            </Animated.View>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -108,25 +185,39 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 24,
     justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  centerBlock: {
+    width: '100%',
+    justifyContent: 'center',
+  },
+  brandRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 32,
+    minHeight: 52,
+  },
+  brandInner: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  brandMeu: {
+    fontSize: 36,
+    fontWeight: '200',
+    letterSpacing: 2,
+    color: '#ffffff',
+  },
+  brandBolso: {
+    fontSize: 36,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: '#2f95dc',
   },
   card: {
     maxWidth: 480,
     width: '100%',
     alignSelf: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    marginBottom: 6,
-  },
-  sub: {
-    fontSize: 15,
-    opacity: 0.75,
-    marginBottom: 20,
-    lineHeight: 22,
   },
   banner: {
     padding: 12,
@@ -139,10 +230,15 @@ const styles = StyleSheet.create({
   field: {
     marginBottom: 14,
   },
+  btnWrap: {
+    marginTop: 4,
+  },
   link: {
     marginTop: 20,
     textAlign: 'center',
     fontSize: 15,
-    opacity: 0.85,
+    opacity: 0.9,
+    color: '#2f95dc',
+    textDecorationLine: 'underline',
   },
 });

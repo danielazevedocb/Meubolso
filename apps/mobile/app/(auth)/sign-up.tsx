@@ -1,7 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, Stack } from 'expo-router';
+import { Link, Stack, useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FormTextField } from '@/components/FormTextField';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -10,11 +18,89 @@ import type { SignUpValues } from '@/forms/auth-group-schemas';
 import { signUpSchema } from '@/forms/auth-group-schemas';
 import { supabase } from '@/lib/supabase';
 import { mapAuthError } from '@/services/supabase-errors';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+const RESEND_COOLDOWN_MS = 60_000;
 
 export default function SignUpScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [banner, setBanner] = useState<string | null>(null);
-  const [confirmEmailBanner, setConfirmEmailBanner] = useState<string | null>(null);
+  /** Cadastro OK mas o projeto exige confirmar e-mail (sem sessão ainda). */
+  const [awaitingEmailVerify, setAwaitingEmailVerify] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [resendSubmitting, setResendSubmitting] = useState(false);
+  const [resendFeedback, setResendFeedback] = useState<string | null>(null);
+  const resendCooldownEndsAtRef = useRef<number | null>(null);
+  const [resendCooldownEndsAt, setResendCooldownEndsAt] = useState<number | null>(null);
+  const [resendCooldownRemainingSec, setResendCooldownRemainingSec] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldownEndsAt === null) {
+      setResendCooldownRemainingSec(0);
+      return;
+    }
+
+    const tick = () => {
+      const sec = Math.max(0, Math.ceil((resendCooldownEndsAt - Date.now()) / 1000));
+      setResendCooldownRemainingSec(sec);
+      if (sec <= 0) {
+        resendCooldownEndsAtRef.current = null;
+        setResendCooldownEndsAt(null);
+      }
+    };
+
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [resendCooldownEndsAt]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = (e: { endCoordinates: { height: number } }) =>
+      setKeyboardHeight(e.endCoordinates.height);
+    const onHide = () => setKeyboardHeight(0);
+    const subShow = Keyboard.addListener(showEvent, onShow);
+    const subHide = Keyboard.addListener(hideEvent, onHide);
+    return () => {
+      subShow.remove();
+      subHide.remove();
+    };
+  }, []);
+
+  const goToSignIn = useCallback(() => {
+    router.replace('/(auth)/sign-in');
+  }, [router]);
+
+  const handleResendConfirmation = useCallback(async () => {
+    if (!registeredEmail.trim()) return;
+
+    const now = Date.now();
+    const activeUntil = resendCooldownEndsAtRef.current;
+    if (activeUntil !== null && now < activeUntil) return;
+
+    const until = now + RESEND_COOLDOWN_MS;
+    resendCooldownEndsAtRef.current = until;
+    setResendCooldownEndsAt(until);
+
+    setResendFeedback(null);
+    setResendSubmitting(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: registeredEmail.trim(),
+      });
+      if (error) {
+        setResendFeedback(mapAuthError(error));
+        return;
+      }
+      setResendFeedback('E-mail de confirmação reenviado. Verifique a caixa de entrada e o spam.');
+    } finally {
+      setResendSubmitting(false);
+    }
+  }, [registeredEmail]);
 
   const {
     control,
@@ -27,7 +113,6 @@ export default function SignUpScreen() {
 
   const onSubmit = handleSubmit(async (values) => {
     setBanner(null);
-    setConfirmEmailBanner(null);
     const { data, error } = await supabase.auth.signUp({
       email: values.email.trim(),
       password: values.password,
@@ -40,34 +125,90 @@ export default function SignUpScreen() {
       return;
     }
     if (!data.session) {
-      setConfirmEmailBanner(
-        'Enviamos um link para confirmar seu e-mail. Após confirmar, volte e entre na conta.',
-      );
+      setRegisteredEmail(values.email.trim());
+      setAwaitingEmailVerify(true);
+      setResendFeedback(null);
       return;
     }
+    /** Conta já ativa (confirmação por e-mail desligada no projeto): o AuthProvider redireciona. */
   });
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Criar conta' }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scroll}>
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          contentContainerStyle={[
+            styles.scroll,
+            {
+              paddingTop: Math.max(insets.top, 16),
+              paddingBottom: Math.max(insets.bottom, 24) + keyboardHeight,
+              justifyContent: keyboardHeight > 0 ? 'flex-start' : 'center',
+            },
+          ]}>
           <View style={styles.card}>
-            <Text style={styles.title}>Criar conta</Text>
-            <Text style={styles.sub}>Cadastre nome, e-mail e senha (PRD).</Text>
+            {awaitingEmailVerify ? (
+              <>
+                <Text style={styles.title}>Verifique seu e-mail</Text>
+                <Text style={styles.sub}>
+                  Enviamos um link de confirmação para{' '}
+                  <Text style={styles.emailHighlight}>{registeredEmail}</Text>. Abra a caixa de
+                  entrada (e o spam) e toque no link para ativar a conta. Depois use
+                  &quot;Entrar&quot; no app.
+                </Text>
+                <View style={styles.successBox}>
+                  <Text accessibilityRole="text" style={styles.bannerInfo}>
+                    Quando confirmar o e-mail, use a mesma senha que cadastrou.
+                  </Text>
+                </View>
 
-            {banner ? (
-              <Text accessibilityRole="alert" style={styles.bannerError}>
-                {banner}
-              </Text>
-            ) : null}
-            {confirmEmailBanner ? (
-              <Text accessibilityRole="text" style={styles.bannerInfo}>
-                {confirmEmailBanner}
-              </Text>
-            ) : null}
+                {resendFeedback ? (
+                  <Text
+                    accessibilityRole={resendFeedback.startsWith('E-mail') ? 'text' : 'alert'}
+                    style={
+                      resendFeedback.startsWith('E-mail') ? styles.resendOk : styles.resendErr
+                    }>
+                    {resendFeedback}
+                  </Text>
+                ) : null}
+
+                <PrimaryButton
+                  label="Reenviar e-mail de confirmação"
+                  loading={resendSubmitting}
+                  disabled={resendCooldownRemainingSec > 0}
+                  onPress={() => void handleResendConfirmation()}
+                />
+                {resendCooldownRemainingSec > 0 ? (
+                  <Text style={styles.resendCooldownHint} accessibilityLiveRegion="polite">
+                    {resendCooldownRemainingSec === 1
+                      ? 'Aguarde 1 segundo para enviar novamente.'
+                      : `Aguarde ${resendCooldownRemainingSec} segundos para enviar novamente.`}
+                  </Text>
+                ) : null}
+
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Ir para tela de entrar"
+                  onPress={goToSignIn}
+                  style={styles.goSignInBtn}>
+                  <Text style={styles.goSignInText}>Ir para entrar</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text style={styles.title}>Criar conta</Text>
+                <Text style={styles.sub}>Cadastre nome, e-mail e senha.</Text>
+
+                {banner ? (
+                  <Text accessibilityRole="alert" style={styles.bannerError}>
+                    {banner}
+                  </Text>
+                ) : null}
 
             <Controller
               control={control}
@@ -75,6 +216,7 @@ export default function SignUpScreen() {
               render={({ field: { value, onChange, onBlur } }) => (
                 <FormTextField
                   label="Nome"
+                  placeholder="Digite seu nome"
                   autoComplete="name"
                   value={value}
                   onBlur={onBlur}
@@ -92,6 +234,7 @@ export default function SignUpScreen() {
               render={({ field: { value, onChange, onBlur } }) => (
                 <FormTextField
                   label="E-mail"
+                  placeholder="Digite seu e-mail"
                   autoCapitalize="none"
                   autoComplete="email"
                   keyboardType="email-address"
@@ -110,7 +253,9 @@ export default function SignUpScreen() {
               render={({ field: { value, onChange, onBlur } }) => (
                 <FormTextField
                   label="Senha"
+                  placeholder="Digite sua senha"
                   secureTextEntry
+                  passwordToggle
                   autoCapitalize="none"
                   textContentType="newPassword"
                   value={value}
@@ -129,9 +274,13 @@ export default function SignUpScreen() {
               onPress={() => void onSubmit()}
             />
 
-            <Link href="/(auth)/sign-in" accessibilityRole="link" style={styles.link}>
-              Já tenho conta
+            <Link href="/(auth)/sign-in" asChild>
+              <Pressable accessibilityRole="link">
+                <Text style={styles.link}>Já tenho conta</Text>
+              </Pressable>
             </Link>
+              </>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -146,8 +295,6 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingVertical: 24,
-    justifyContent: 'center',
   },
   card: {
     maxWidth: 480,
@@ -174,21 +321,62 @@ const styles = StyleSheet.create({
     color: '#c62828',
   },
   bannerInfo: {
-    padding: 12,
-    marginBottom: 16,
-    borderRadius: 8,
-    overflow: 'hidden',
     fontSize: 14,
-    opacity: 0.85,
+    opacity: 0.9,
+    lineHeight: 21,
+  },
+  successBox: {
+    padding: 14,
+    marginBottom: 16,
+    borderRadius: 10,
+    backgroundColor: 'rgba(47, 149, 220, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(47, 149, 220, 0.35)',
+  },
+  emailHighlight: {
+    fontWeight: '700',
+    color: '#2f95dc',
+  },
+  resendOk: {
+    fontSize: 14,
+    marginBottom: 14,
     lineHeight: 20,
+    opacity: 0.9,
+    color: '#81c784',
+  },
+  resendErr: {
+    fontSize: 14,
+    marginBottom: 14,
+    lineHeight: 20,
+    color: '#ef9a9a',
+  },
+  resendCooldownHint: {
+    fontSize: 13,
+    marginTop: 10,
+    textAlign: 'center',
+    opacity: 0.75,
+    lineHeight: 18,
   },
   field: {
     marginBottom: 14,
+  },
+  goSignInBtn: {
+    marginTop: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  goSignInText: {
+    fontSize: 16,
+    color: '#2f95dc',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   link: {
     marginTop: 20,
     textAlign: 'center',
     fontSize: 15,
-    opacity: 0.85,
+    opacity: 0.9,
+    color: '#2f95dc',
+    textDecorationLine: 'underline',
   },
 });

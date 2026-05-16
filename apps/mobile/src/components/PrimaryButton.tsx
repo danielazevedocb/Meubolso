@@ -13,9 +13,19 @@ type Props = {
   loading?: boolean;
 };
 
+/** Dark theme uses white tint for primary actions — label must be dark for contrast. */
+function labelColorForTint(tint: string): string {
+  const normalized = tint.trim().toLowerCase();
+  if (normalized === '#fff' || normalized === '#ffffff') {
+    return '#111827';
+  }
+  return '#fff';
+}
+
 export function PrimaryButton({ label, onPress, disabled, loading }: Props) {
   const scheme = useColorScheme() ?? 'light';
   const tint = Colors[scheme].tint;
+  const labelColor = labelColorForTint(tint);
 
   return (
     <Pressable
@@ -32,9 +42,9 @@ export function PrimaryButton({ label, onPress, disabled, loading }: Props) {
         },
       ]}>
       {loading ? (
-        <ActivityIndicator color={scheme === 'dark' ? '#000' : '#fff'} />
+        <ActivityIndicator color={labelColor} />
       ) : (
-        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.label, { color: labelColor }]}>{label}</Text>
       )}
     </Pressable>
   );
@@ -49,7 +59,6 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   label: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '700',
   },
