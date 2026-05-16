@@ -1,0 +1,15 @@
+# Secrets e ambiente (nunca commitar; manter *.example versionados)
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dependências e artefatos de build comuns em monorepos
+node_modules/
+dist/
+build/
+coverage/
+
+# SO / editor comum
+.DS_Store
+Thumbs.db
+*.log
