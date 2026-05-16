@@ -4,6 +4,7 @@ import type { NativeStackNavigationOptions } from '@react-navigation/native-stac
 import { Platform } from 'react-native';
 
 import Colors from '@/constants/Colors';
+import { appStackHeaderForScheme } from '@/navigation/AppStackHeader';
 
 export type AppColorScheme = 'light' | 'dark';
 
@@ -38,28 +39,23 @@ export function buildNavigationTheme(scheme: AppColorScheme): Theme {
 }
 
 /**
- * Opaque stack/tab headers — native bar only, no custom `header` / `headerBackground`.
+ * Stack headers with thin top/bottom borders via custom `header` (works on web and Expo Go).
  *
  * On Android, do not set `statusBarTranslucent: false`: React Navigation maps that boolean to
- * `headerTopInsetEnabled`, so `false` disables top inset even when safe-area `top` is non-zero
- * (edge-to-edge / modern devices) and the header draws under the status bar.
- * Leave translucency unset so inset follows `useSafeAreaInsets().top`.
- *
- * Custom headers duplicated status-bar inset (wrapper padding + Header spacer) → extra-tall bar.
- * `headerBackground` forces translucent mode and content draws under the bar on Android.
+ * `headerTopInsetEnabled`, so `false` disables top inset even when safe-area `top` is non-zero.
  */
 export function stackHeaderScreenOptions(scheme: AppColorScheme): NativeStackNavigationOptions {
   const palette = Colors[scheme];
-  const headerBg = headerBarColor(scheme);
 
   const statusBarBg = statusBarBackgroundColor(scheme);
   const barStyle = statusBarStyle(scheme);
 
   return {
     headerTransparent: false,
-    headerStyle: { backgroundColor: headerBg },
+    header: appStackHeaderForScheme(scheme),
+    headerStyle: { backgroundColor: 'transparent' },
     headerBlurEffect: 'none',
-    headerShadowVisible: Platform.OS !== 'android',
+    headerShadowVisible: false,
     headerTintColor: palette.text,
     headerTitleStyle: { color: palette.text },
     contentStyle: { backgroundColor: palette.background },

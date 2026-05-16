@@ -20,6 +20,7 @@ export default function AppLayout() {
         name="index"
         options={mergeStackHeaderOptions(scheme, {
           title: 'Como você vai usar?',
+          headerTitleAlign: 'left',
           headerBackVisible: false,
           headerRight:
             session != null
@@ -30,7 +31,6 @@ export default function AppLayout() {
                     hitSlop={12}
                     onPress={() => router.push('/(app)/conta')}
                     style={{
-                      marginRight: 15,
                       minWidth: 44,
                       minHeight: 44,
                       alignItems: 'center',

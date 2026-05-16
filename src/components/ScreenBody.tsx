@@ -1,6 +1,6 @@
 import { Platform, StyleSheet, View, type ViewProps } from 'react-native';
 
-const WEB_MAX_WIDTH = 480;
+import { WEB_MAX_CONTENT_WIDTH } from '@/constants/Layout';
 
 type ScreenBodyProps = ViewProps & {
   fullWidth?: boolean;
@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   webConstrained: {
-    maxWidth: WEB_MAX_WIDTH,
+    maxWidth: WEB_MAX_CONTENT_WIDTH,
     alignSelf: 'center',
   },
 });
