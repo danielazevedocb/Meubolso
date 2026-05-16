@@ -33,8 +33,9 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 |--------|--------|
 | Criar schema: `users`, `groups`, `group_members`, `months`, `bills` (PRD §7) | concluído — impl. via `profiles` (`id` FK `auth.users`) + `groups`, `group_members`, `months`, `bills` em `supabase/migrations/20260515153000_finance_core_schema.sql` |
 | Definir índices e constraints (invite_code único, FKs, limites de grupo) | concluído — índices parciais (solo vs grupo), uniques compostos bills, único por mês/membro/grupo |
-| Implementar RLS e políticas por `user_id` / `group_id` (leitura/escrita segura) | concluído — RLS nas tabelas acima + `lookup_group_by_invite` para fluxo do código sem vazar outros grupos; proteção ao alterar `invite_code` apenas owner |
-| Habilitar **Realtime** nas tabelas necessárias (contas, meses, membros) | concluído — `ALTER PUBLICATION supabase_realtime ADD TABLE bills, months, group_members` na mesma migration (validar no Dashboard se necessário) |
+| Implementar RLS e políticas por `user_id` / `group_id` (leitura/escrita segura) | concluído — RLS base em `supabase/migrations/20260515153000_finance_core_schema.sql` **+ patch** `20260515174500_rls_join_invite_months_bills_checks.sql`: entrada em grupo apenas via `join_group_by_invite`; creator vira owner por trigger (`groups_after_insert_add_owner`); `months`/`bills` em modo grupo exige `user_id` ser **membro** do `group_id`; soft-delete em `bills` com `WITH CHECK` ajustado; `lookup_group_by_invite` e guard de convite mantidos |
+| Habilitar **Realtime** nas tabelas necessárias (contas, meses, membros) | concluído — `supabase_realtime` inclui `bills`, `months`, `group_members` (migration inicial + garantia **idempotente** no patch `20260515174500_…`) |
+| Testes manuais RLS/Realtime | concluído — roteiro em `docs/testing-rls-realtime.md` (dois usuários; MCP Supabase só se o projeto estiver ligado ao Cursor) |
 | Seeds ou dados de fixture para desenvolvimento | pendente |
 | (Opcional) Adotar Prisma ou manter SQL/migrations via Supabase CLI | pendente |
 
