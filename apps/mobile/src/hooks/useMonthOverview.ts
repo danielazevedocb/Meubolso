@@ -27,6 +27,8 @@ export function useMonthOverview(input: {
 
     setStatus('loading');
     setErrorMessage(null);
+    setMembers([]);
+    setContext(null);
 
     try {
       const result = await loadMonthOverview({
