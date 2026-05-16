@@ -1,0 +1,602 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { BillEditorModal } from '@/components/BillEditorModal';
+import { FormTextField } from '@/components/FormTextField';
+import { PrimaryButton } from '@/components/PrimaryButton';
+import { Text, View } from '@/components/Themed';
+import Colors from '@/constants/Colors';
+import { parseMoneyInput } from '@/forms/bill-form-schema';
+import { useAuth } from '@/hooks/useAuth';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { useContasScreen } from '@/hooks/useContasScreen';
+import { formatMonthHeadingPt } from '@/lib/month-key';
+import type { BillRow } from '@/types/finance';
+
+const money = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+});
+
+export default function ContasScreen() {
+  const { profile, user } = useAuth();
+  const scheme = useColorScheme() ?? 'light';
+  const palette = Colors[scheme];
+  const params = useLocalSearchParams<{ monthLabel?: string; memberUserId?: string }>();
+
+  const selfName =
+    profile?.display_name?.trim() || user?.email?.split('@')[0] || 'Você';
+
+  const hook = useContasScreen({
+    routeMonthLabel: params.monthLabel,
+    routeMemberUserId: params.memberUserId,
+    authUserId: user?.id,
+    selfDisplayName: selfName,
+  });
+
+  const {
+    monthLabel,
+    context,
+    members,
+    memberUserId,
+    setMemberUserId,
+    activeMemberName,
+    bills,
+    monthRow,
+    billsTotal,
+    balance,
+    status,
+    errorMessage,
+    dismissError,
+    setPaidOptimistic,
+    removeBillConfirmed,
+    createBill,
+    saveBill,
+    saveMonthSalaryNote,
+  } = hook;
+
+  const monthHeading = useMemo(() => formatMonthHeadingPt(monthLabel), [monthLabel]);
+  const balanceColor = balance < 0 ? palette.balanceNegative : palette.balancePositive;
+  const isGroup = context?.mode === 'group';
+
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingBill, setEditingBill] = useState<BillRow | null>(null);
+  const [salaryInput, setSalaryInput] = useState('');
+  const [monthNoteInput, setMonthNoteInput] = useState('');
+  const [monthMetaSaving, setMonthMetaSaving] = useState(false);
+
+  useEffect(
+    () => {
+      if (!monthRow) return;
+      setSalaryInput(
+        new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(
+          monthRow.salary,
+        ),
+      );
+      setMonthNoteInput(monthRow.note ?? '');
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- evita re-sync ao trocar só a referência de `monthRow` no mesmo registro
+    [monthRow?.id, monthRow?.salary, monthRow?.note],
+  );
+
+  const openNew = useCallback(() => {
+    setEditingBill(null);
+    setEditorOpen(true);
+  }, []);
+
+  const openEdit = useCallback((b: BillRow) => {
+    setEditingBill(b);
+    setEditorOpen(true);
+  }, []);
+
+  const confirmDelete = useCallback((b: BillRow) => {
+    Alert.alert(
+      'Excluir esta conta?',
+      `Isso remove "${b.company}" da lista deste mês. A exclusão é aplicada no servidor e pode ser bloqueada se você não tiver permissão.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: () => void removeBillConfirmed(b.id),
+        },
+      ],
+    );
+  }, [removeBillConfirmed]);
+
+  const saveMonthMeta = useCallback(async () => {
+    const sal = parseMoneyInput(salaryInput);
+    if (!Number.isFinite(sal) || sal < 0) {
+      Alert.alert('Salário inválido', 'Informe um valor numérico (ex.: 5.000,00).');
+      return;
+    }
+    setMonthMetaSaving(true);
+    try {
+      const note = monthNoteInput.trim() || null;
+      await saveMonthSalaryNote(sal, note);
+    } catch {
+      /* erro já exibido no banner */
+    } finally {
+      setMonthMetaSaving(false);
+    }
+  }, [monthNoteInput, salaryInput, saveMonthSalaryNote]);
+
+  const renderBill = useCallback(
+    ({ item: b }: { item: BillRow }) => {
+      const foreign = !!user?.id && b.user_id !== user.id;
+      return (
+        <View
+          style={[
+            styles.billCard,
+            { borderColor: palette.borderSubtle, backgroundColor: palette.surfaceSubtle },
+          ]}>
+          <View style={styles.billTop}>
+            <View style={styles.billTitleCol}>
+              <Text style={styles.billCompany}>{b.company}</Text>
+              {foreign ? (
+                <Text style={[styles.foreignHint, { color: palette.caption }]}>
+                  Conta de outro membro
+                </Text>
+              ) : null}
+            </View>
+            <Text style={styles.billAmount}>{money.format(b.amount)}</Text>
+          </View>
+          <View style={styles.billMeta}>
+            {b.due_date ? (
+              <Text style={[styles.due, { color: palette.caption }]}>
+                Vence em {b.due_date}
+              </Text>
+            ) : (
+              <Text style={[styles.due, { color: palette.caption }]}>Sem vencimento</Text>
+            )}
+            <Text style={[styles.paidTag, { color: b.paid ? palette.balancePositive : palette.caption }]}>
+              {b.paid ? 'Pago' : 'Pendente'}
+            </Text>
+          </View>
+          {b.note ? (
+            <Text style={[styles.billNote, { color: palette.caption }]}>{b.note}</Text>
+          ) : null}
+          <View style={styles.billActions}>
+            <View style={styles.paidToggle}>
+              <Text style={styles.paidToggleLabel}>Pago</Text>
+              <Switch
+                accessibilityLabel={`Marcar ${b.company} como ${b.paid ? 'pendente' : 'pago'}`}
+                value={b.paid}
+                onValueChange={(v) => void setPaidOptimistic(b.id, v)}
+                trackColor={{ false: '#888', true: palette.tint }}
+              />
+            </View>
+            <View style={styles.inlineBtns}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Editar ${b.company}`}
+                onPress={() => openEdit(b)}
+                style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.55 : 1 }]}>
+                <FontAwesome name="pencil" size={18} color={palette.tint} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Excluir ${b.company}`}
+                onPress={() => confirmDelete(b)}
+                style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.55 : 1 }]}>
+                <FontAwesome name="trash" size={18} color={palette.balanceNegative} />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      );
+    },
+    [
+      confirmDelete,
+      openEdit,
+      palette.balanceNegative,
+      palette.balancePositive,
+      palette.borderSubtle,
+      palette.caption,
+      palette.surfaceSubtle,
+      palette.tint,
+      setPaidOptimistic,
+      user?.id,
+    ],
+  );
+
+  const listFooter = (
+      <View style={styles.footer}>
+        <View style={[styles.summary, { borderColor: palette.borderSubtle }]}>
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { color: palette.caption }]}>Total das contas</Text>
+            <Text style={styles.summaryValue}>{money.format(billsTotal)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { color: palette.caption }]}>Salário (mês)</Text>
+            <Text style={styles.summaryValue}>{money.format(monthRow?.salary ?? 0)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { color: palette.caption }]}>Saldo</Text>
+            <Text style={[styles.summaryValueStrong, { color: balanceColor }]}>
+              {money.format(balance)}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>Salário e nota do mês</Text>
+        <Text style={[styles.hint, { color: palette.caption }]}>
+          Valem para <Text style={{ fontWeight: '700' }}>{activeMemberName}</Text> neste mês, conforme seu
+          grupo ou modo solo.
+        </Text>
+
+        <FormTextField
+          label="Salário (R$)"
+          value={salaryInput}
+          onChangeText={setSalaryInput}
+          keyboardType="decimal-pad"
+          editable={!!monthRow && status === 'success'}
+          hint="Mesmo valor usado na visão geral para o saldo."
+          containerStyle={styles.fieldGap}
+        />
+        <FormTextField
+          label="Nota do mês (opcional)"
+          value={monthNoteInput}
+          onChangeText={setMonthNoteInput}
+          multiline
+          editable={!!monthRow && status === 'success'}
+          hint="Ex.: pagar com cartão de crédito."
+          containerStyle={styles.fieldGap}
+        />
+        <PrimaryButton
+          label="Salvar salário e nota do mês"
+          onPress={() => void saveMonthMeta()}
+          disabled={!monthRow || monthMetaSaving || status !== 'success'}
+          loading={monthMetaSaving}
+        />
+      </View>
+    );
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: palette.background }]} edges={['top']}>
+      <View style={styles.topBar}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
+          hitSlop={12}
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.55 : 1 }]}>
+          <FontAwesome name="chevron-left" size={20} color={palette.tint} />
+        </Pressable>
+        <View style={styles.topTitles}>
+          <Text style={styles.screenTitle}>Contas</Text>
+          <Text style={[styles.subTitle, { color: palette.caption }]}>{monthHeading}</Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Adicionar conta"
+          hitSlop={12}
+          disabled={status !== 'success' || !memberUserId}
+          onPress={openNew}
+          style={({ pressed }) => [
+            styles.backBtn,
+            { opacity: pressed || status !== 'success' || !memberUserId ? 0.4 : 1 },
+          ]}>
+          <FontAwesome name="plus" size={20} color={palette.tint} />
+        </Pressable>
+      </View>
+
+      {errorMessage ? (
+        <Pressable
+          onPress={dismissError}
+          style={[styles.errBanner, { backgroundColor: palette.surfaceSubtle, borderColor: palette.borderSubtle }]}>
+          <Text style={styles.errText}>{errorMessage}</Text>
+          <Text style={[styles.errDismiss, { color: palette.tint }]}>Dispensar</Text>
+        </Pressable>
+      ) : null}
+
+      {isGroup && members.length > 1 ? (
+        <View style={styles.memberPick}>
+          <Text style={[styles.memberPickLabel, { color: palette.caption }]}>Membro</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.memberChips}>
+            {members.map((m) => {
+              const sel = m.userId === memberUserId;
+              return (
+                <Pressable
+                  key={m.userId}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: sel }}
+                  onPress={() => setMemberUserId(m.userId)}
+                  style={[
+                    styles.memberChip,
+                    {
+                      borderColor: sel ? palette.tint : palette.borderSubtle,
+                      backgroundColor: sel ? palette.surfaceSubtle : 'transparent',
+                    },
+                  ]}>
+                  <Text style={[styles.memberChipText, { color: sel ? palette.tint : palette.text }]}>
+                    {m.displayName}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      ) : (
+        <Text style={[styles.singleMemberHint, { color: palette.caption }]}>
+          {activeMemberName}
+        </Text>
+      )}
+
+      {status === 'loading' || status === 'idle' ? (
+        <View style={styles.centered}>
+          <ActivityIndicator color={palette.tint} size="large" />
+          <Text style={[styles.loadingHint, { color: palette.caption }]}>Carregando contas…</Text>
+        </View>
+      ) : null}
+
+      {status === 'error' ? (
+        <View style={styles.centered}>
+          <Text style={styles.errTitle}>Não foi possível carregar as contas</Text>
+          {errorMessage ? <Text style={styles.errBody}>{errorMessage}</Text> : null}
+          <PrimaryButton label="Voltar" onPress={() => router.back()} />
+        </View>
+      ) : null}
+
+      {status === 'success' ? (
+        <FlatList
+          data={bills}
+          keyExtractor={(b) => b.id}
+          renderItem={renderBill}
+          ListEmptyComponent={
+            <Text style={[styles.empty, { color: palette.caption }]}>
+              Nenhuma conta neste mês para {activeMemberName}. Toque em + para adicionar.
+            </Text>
+          }
+          ListFooterComponent={listFooter}
+          contentContainerStyle={styles.listContent}
+        />
+      ) : null}
+
+      <BillEditorModal
+        visible={editorOpen}
+        onClose={() => {
+          setEditorOpen(false);
+          setEditingBill(null);
+        }}
+        context={context}
+        members={members}
+        monthHeading={monthHeading}
+        authUserId={user?.id}
+        editing={editingBill}
+        defaultAssigneeUserId={memberUserId}
+        onSubmitCreate={createBill}
+        onSubmitUpdate={saveBill}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  backBtn: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topTitles: {
+    flex: 1,
+  },
+  screenTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  subTitle: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+  errBanner: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 6,
+  },
+  errText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  errDismiss: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  memberPick: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    gap: 6,
+  },
+  memberPickLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  memberChips: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  memberChip: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  memberChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  singleMemberHint: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    gap: 12,
+  },
+  loadingHint: {
+    fontSize: 14,
+  },
+  errTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  errBody: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+    gap: 12,
+  },
+  empty: {
+    fontSize: 14,
+    lineHeight: 20,
+    paddingVertical: 24,
+    textAlign: 'center',
+  },
+  billCard: {
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 14,
+    gap: 8,
+    marginBottom: 4,
+  },
+  billTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  billTitleCol: {
+    flex: 1,
+    gap: 4,
+  },
+  billCompany: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  foreignHint: {
+    fontSize: 12,
+  },
+  billAmount: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  billMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  due: {
+    fontSize: 13,
+  },
+  paidTag: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  billNote: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  billActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  paidToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  paidToggleLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  inlineBtns: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  iconBtn: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footer: {
+    marginTop: 20,
+    gap: 8,
+    paddingBottom: 24,
+  },
+  summary: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    padding: 14,
+    gap: 10,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: 12,
+  },
+  summaryLabel: {
+    fontSize: 14,
+  },
+  summaryValue: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  summaryValueStrong: {
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginTop: 12,
+  },
+  hint: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  fieldGap: {
+    marginTop: 4,
+  },
+});

@@ -49,6 +49,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="contas"
+        options={{
+          href: null,
+          title: 'Contas',
+        }}
+      />
+      <Tabs.Screen
         name="add-account"
         options={{
           href: null,

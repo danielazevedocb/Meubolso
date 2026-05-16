@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
 import Colors from '@/constants/Colors';
@@ -12,14 +12,16 @@ const money = new Intl.NumberFormat('pt-BR', {
 
 type Props = {
   snapshot: MemberMonthSnapshot;
+  /** Abre a lista de contas do membro no mês atual. */
+  onPress?: () => void;
 };
 
-export function MemberMonthCard({ snapshot }: Props) {
+export function MemberMonthCard({ snapshot, onPress }: Props) {
   const scheme = useColorScheme() ?? 'light';
   const c = Colors[scheme];
   const balanceColor = snapshot.balance < 0 ? c.balanceNegative : c.balancePositive;
 
-  return (
+  const card = (
     <View style={[styles.card, { backgroundColor: c.surfaceSubtle, borderColor: c.borderSubtle }]}>
       <Text style={styles.name}>{snapshot.displayName}</Text>
       <View style={styles.row}>
@@ -38,6 +40,20 @@ export function MemberMonthCard({ snapshot }: Props) {
       </View>
     </View>
   );
+
+  if (onPress) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Ver contas de ${snapshot.displayName}`}
+        onPress={onPress}
+        style={({ pressed }) => [{ opacity: pressed ? 0.92 : 1 }]}>
+        {card}
+      </Pressable>
+    );
+  }
+
+  return card;
 }
 
 const styles = StyleSheet.create({

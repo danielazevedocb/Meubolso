@@ -114,7 +114,16 @@ export default function HomeScreen() {
         {status === 'success' && members.length > 0 ? (
           <View style={styles.cards}>
             {members.map((m) => (
-              <MemberMonthCard key={m.userId} snapshot={m} />
+              <MemberMonthCard
+                key={m.userId}
+                snapshot={m}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(tabs)/contas',
+                    params: { monthLabel, memberUserId: m.userId },
+                  })
+                }
+              />
             ))}
           </View>
         ) : null}
@@ -122,7 +131,12 @@ export default function HomeScreen() {
         <View style={styles.actions}>
           <PrimaryButton
             label="Adicionar nova conta"
-            onPress={() => router.push('/(tabs)/add-account')}
+            onPress={() =>
+              router.push({
+                pathname: '/(tabs)/contas',
+                params: { monthLabel, memberUserId: user?.id ?? '' },
+              })
+            }
           />
           <Pressable
             accessibilityRole="button"

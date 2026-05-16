@@ -68,13 +68,13 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 |--------|--------|
 | Onboarding: criar grupo / entrar com código / usar solo | concluído — `app/(onboarding)/` + RPC `join_group_by_invite` / pref. solo AsyncStorage `@meubolso/pref_solo_mode` |
 | Tela principal: mês atual, navegação entre meses, cards por membro | concluído — `app/(tabs)/index.tsx`, serviço `src/services/dashboard.ts`, mês `YYYY-MM` + setas; cria linha em `months` se faltar |
-| Tela de contas por membro: lista, totais, salário, nota do mês | pendente |
-| Adicionar/editar conta (modal/tela) + confirmação ao editar conta de outro membro | pendente |
-| Marcar pago/pendente, excluir com confirmação | pendente |
+| Tela de contas por membro: lista, totais, salário, nota do mês | concluído — `app/(tabs)/contas.tsx` + serviços `bills` / `month-settings` |
+| Adicionar/editar conta (modal/tela) + confirmação ao editar conta de outro membro | concluído — `BillEditorModal` + aviso RLS em edição alheia |
+| Marcar pago/pendente, excluir com confirmação | concluído — toggle otimista + soft-delete `deleted_at` + `Alert` |
 | Indicador “membro online” (Realtime/presence conforme design) | pendente |
 | Meses anteriores somente leitura após regra de negócio (PRD §10 item 3) | pendente |
 | Duplicar/importar contas do mês anterior (banner, menu, modais, anti-duplicidade) | pendente |
-| Configurações: perfil, grupo, salário, logout | pendente |
+| Configurações: perfil, grupo, salário, logout | parcial — salário e nota do mês por membro na tela Contas (`months`); perfil/grupo/logout pendente |
 
 ---
 
@@ -107,7 +107,7 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 | 3 | Membros veem contas uns dos outros em tempo real | pendente |
 | 4 | Adicionar conta reflete imediatamente para outros | pendente |
 | 5 | Saldo recalculado automaticamente | pendente |
-| 6 | Marcar conta como paga | pendente |
+| 6 | Marcar conta como paga | concluído |
 | 7 | Navegar entre meses anteriores | concluído |
 | 8 | Meses anteriores não editáveis | pendente |
 | 9 | Sugestão de copiar contas ao abrir mês vazio | pendente |

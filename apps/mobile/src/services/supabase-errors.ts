@@ -38,7 +38,21 @@ export function mapPostgrestOrRpcError(
     raw.includes('groups_invite_code_uidx') ||
     raw.toLowerCase().includes('unique constraint')
   ) {
+    if (
+      raw.includes('bills_group_company_uidx') ||
+      raw.includes('bills_solo_company_uidx')
+    ) {
+      return 'Já existe uma conta com essa descrição neste mês. Ajuste o nome ou edite a existente.';
+    }
     return 'Código de convite já em uso. Toque em criar de novo para gerar outro.';
+  }
+
+  if (
+    raw.toLowerCase().includes('permission denied') ||
+    raw.includes('42501') ||
+    raw.toLowerCase().includes('new row violates row-level security')
+  ) {
+    return 'Não foi possível salvar: permissão negada pelo servidor. Talvez você não possa editar este registro.';
   }
 
   return raw;
