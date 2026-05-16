@@ -18,7 +18,7 @@ export function SupabaseConfigMissing() {
           arquivo .env local).
         </Text>
         <Text style={styles.hint}>
-          No painel Expo: projeto Meubolso → Environment variables. Depois gere um novo APK/AAB.
+          No painel Expo: projeto MeuBolso → Environment variables. Depois gere um novo APK/AAB.
         </Text>
       </View>
     </SafeAreaView>

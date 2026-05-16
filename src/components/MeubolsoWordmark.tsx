@@ -7,7 +7,7 @@ export type MeubolsoWordmarkProps = {
   fontSize?: number;
   style?: StyleProp<ViewStyle>;
   /**
-   * `standalone`: login / hero — leitores de tela anunciam "Meubolso" uma vez.
+   * `standalone`: login / hero — leitores de tela anunciam "MeuBolso" uma vez.
    * `inline`: dentro de um título com rótulo pai — não compete com o label agregado.
    */
   variant?: 'standalone' | 'inline';
@@ -55,7 +55,7 @@ export function MeubolsoWordmark({
       style={[styles.row, style]}
       accessible={variant === 'standalone'}
       accessibilityRole={variant === 'standalone' ? 'text' : undefined}
-      accessibilityLabel={variant === 'standalone' ? 'Meubolso' : undefined}>
+      accessibilityLabel={variant === 'standalone' ? 'MeuBolso' : undefined}>
       <Text style={meuStyle} importantForAccessibility={suppressPartLabels ? 'no' : 'yes'}>
         Meu
       </Text>

@@ -42,7 +42,7 @@ export default function HubScreen() {
           style={styles.titleRow}
           accessible
           accessibilityRole="header"
-          accessibilityLabel="Bem-vindo ao Meubolso">
+          accessibilityLabel="Bem-vindo ao MeuBolso">
           <Text style={styles.welcomePrefix} importantForAccessibility="no">
             Bem-vindo ao{' '}
           </Text>
