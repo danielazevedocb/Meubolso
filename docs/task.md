@@ -11,7 +11,7 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 | Tarefa | Status |
 |--------|--------|
 | Criar documentação do agente (`agente.md`, `task.md`, `guia-desenvolvimento.md`) | concluído |
-| Revisar PRD vs. implementação e ajustar gaps de escopo | pendente |
+| Revisar PRD vs. implementação e ajustar gaps de escopo | parcial — matriz §11 atualizada conforme código; gaps: Realtime no cliente (§11.3–4), escolha de mês de origem na cópia (§11.12) |
 | Definir convenção de branches e PRs com o time | pendente |
 
 ---
@@ -23,7 +23,7 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 | Configurar monorepo/app Expo (SDK, TypeScript, ESLint/Prettier) | concluído |
 | Configurar variáveis de ambiente (ex.: `EXPO_PUBLIC_SUPABASE_*`) sem commitar secrets | concluído |
 | Conectar repositório a projeto Supabase (projeto dev/staging) | concluído — cliente (`apps/mobile/src/lib/supabase.ts`) + `.env.example`; preencher `.env` local com URL/chave do Dashboard |
-| Documentar setup local em README (sem secrets) | pendente |
+| Documentar setup local em README (sem secrets) | concluído — `apps/mobile/README.md` (+ env via `.env.example`) |
 
 ---
 
@@ -93,27 +93,29 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 
 | Tarefa | Status |
 |--------|--------|
-| Estratégia de logs/crash em produção (sem PII indevida) | pendente |
-| Pipeline EAS Build (iOS/Android) e critérios de release v1.0 | pendente |
+| Estratégia de logs/crash em produção (sem PII indevida) | parcial — princípios em `apps/mobile/README.md` § Observabilidade; sem SDK de crash/analytics integrado |
+| Pipeline EAS Build (iOS/Android) e critérios de release v1.0 | concluído — `apps/mobile/eas.json`, scripts `eas:build` / `eas:submit`, checklist em `apps/mobile/README.md` |
 
 ---
 
 ## Critérios de aceitação (PRD §11)
 
-| # | Tarefa | Status |
-|---|--------|--------|
-| 1 | Cadastro e login e-mail/senha | concluído |
-| 2 | Criar grupo e convidar por código | concluído |
-| 3 | Membros veem contas uns dos outros em tempo real | pendente |
-| 4 | Adicionar conta reflete imediatamente para outros | pendente |
-| 5 | Saldo recalculado automaticamente | pendente |
-| 6 | Marcar conta como paga | concluído |
-| 7 | Navegar entre meses anteriores | concluído |
-| 8 | Meses anteriores não editáveis | concluído |
-| 9 | Sugestão de copiar contas ao abrir mês vazio | concluído |
-| 10 | Cópia reseta status para pendente | concluído |
-| 11 | Importação não sobrescreve contas existentes (regra PRD) | concluído |
-| 12 | Escolher mês de origem diferente do imediatamente anterior | pendente |
+Validação contra código (`apps/mobile`) + migrações (`supabase/migrations`). Legenda: **concluído** | **parcial** | **pendente**.
+
+| # | Tarefa | Status | Notas |
+|---|--------|--------|--------|
+| 1 | Cadastro e login e-mail/senha | concluído | `(auth)/sign-in`, `sign-up`, Zod/RHF |
+| 2 | Criar grupo e convidar por código | concluído | Onboarding + `invite_code`; entrada via RPC `join_group_by_invite` |
+| 3 | Membros veem contas uns dos outros em tempo real | parcial | RLS permite ler contas do grupo; migrações publicam Realtime em `bills`/`months`/`group_members`, mas o app **não** subscreve `postgres_changes` — só **Presence** (`useGroupPresence`). Lista/resumo atualizam em nova carga/navegação, não ao vivo entre dispositivos. |
+| 4 | Adicionar conta reflete imediatamente para outros | pendente | Depende de subscription Realtime ou pull ao focar ecrã; hoje não há listener Supabase nas telas de visão geral/contas. |
+| 5 | Saldo recalculado automaticamente | concluído | Totais/saldo derivados de bill list + `months.salary` em `useContasScreen` / `loadMonthOverview`; após mutations chama-se `refreshMemberData` / reload. |
+| 6 | Marcar conta como paga | concluído | Toggle otimista + persistência em `bills.paid` |
+| 7 | Navegar entre meses anteriores | concluído | Home e Contas com `monthLabel` / setas |
+| 8 | Meses anteriores não editáveis | concluído | `isReadOnlyMonth` bloqueia edição na UI e mutations |
+| 9 | Sugestão de copiar contas ao abrir mês vazio | concluído | Banner `useDuplicateMonthImport` quando mês sem contas e mês anterior com dados |
+| 10 | Cópia reseta status para pendente | concluído | `executeBillDuplication` força `paid: false` |
+| 11 | Importação não sobrescreve contas existentes (regra PRD) | concluído | Merge por nome/membro; duplicados ignorados + feedback no modal |
+| 12 | Escolher mês de origem diferente do imediatamente anterior | pendente | `useDuplicateMonthImport` fixa origem em `shiftMonthKey(monthLabel, -1)`; UI sem selector de outro mês. |
 
 ---
 
