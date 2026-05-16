@@ -4,7 +4,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -37,6 +37,14 @@ export default function RootLayout() {
     if (error) throw error;
   }, [error]);
 
+  useEffect(() => {
+    if (!loaded || isSupabaseConfigured) return undefined;
+    const frame = requestAnimationFrame(() => {
+      void SplashScreen.hideAsync();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [loaded]);
+
   if (!loaded) {
     return null;
   }
@@ -57,18 +65,25 @@ function RootGate() {
   const scheme: AppColorScheme = colorScheme === 'dark' ? 'dark' : 'light';
   const navigationTheme = buildNavigationTheme(scheme);
   const { session, initialized, routingReady } = useAuth();
+  const [bootFallback, setBootFallback] = useState(false);
 
   const splashMayHide = initialized && (!session || routingReady);
+  const canRender = splashMayHide || bootFallback;
 
   useEffect(() => {
-    if (!splashMayHide) return undefined;
-    const t = requestAnimationFrame(() => {
+    const timer = setTimeout(() => setBootFallback(true), 12_000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!canRender) return undefined;
+    const frame = requestAnimationFrame(() => {
       void SplashScreen.hideAsync();
     });
-    return () => cancelAnimationFrame(t);
-  }, [splashMayHide]);
+    return () => cancelAnimationFrame(frame);
+  }, [canRender]);
 
-  if (!splashMayHide) {
+  if (!canRender) {
     return null;
   }
 

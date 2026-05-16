@@ -49,12 +49,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let bootFinished = false;
 
-    void supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      setSession(data.session ?? null);
+    const finishBoot = (nextSession: Session | null) => {
+      if (!mounted || bootFinished) return;
+      bootFinished = true;
+      setSession(nextSession);
       setInitialized(true);
-    });
+    };
+
+    const bootTimeout = setTimeout(() => finishBoot(null), 12_000);
+
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => finishBoot(data.session ?? null))
+      .catch(() => finishBoot(null))
+      .finally(() => clearTimeout(bootTimeout));
 
     const {
       data: { subscription },
@@ -64,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       mounted = false;
+      clearTimeout(bootTimeout);
       subscription.unsubscribe();
     };
   }, []);
@@ -82,7 +93,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setRoutingReady(false);
       try {
-        await hydrateProfile(user);
+        await Promise.race([
+          hydrateProfile(user),
+          new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('profile_hydrate_timeout')), 15_000);
+          }),
+        ]);
+      } catch {
+        setProfile(null);
       } finally {
         if (!cancelled) setRoutingReady(true);
       }
