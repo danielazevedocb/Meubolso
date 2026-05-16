@@ -35,7 +35,7 @@ const money = new Intl.NumberFormat('pt-BR', {
 });
 
 export default function OverviewScreen() {
-  const { profile, user, signOut } = useAuth();
+  const { profile, user } = useAuth();
   const scheme = useColorScheme() ?? 'light';
   const palette = Colors[scheme];
 
@@ -398,16 +398,9 @@ export default function OverviewScreen() {
             })
           }
         />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Encerrar sessão"
-          onPress={() => void signOut()}
-          style={({ pressed }) => [styles.signOut, { opacity: pressed ? 0.65 : 1 }]}>
-          <Text style={[styles.signOutText, { color: palette.tint }]}>Encerrar sessão</Text>
-        </Pressable>
       </View>
     ),
-    [monthLabel, palette.tint, readOnlyMonth, signOut, user?.id],
+    [monthLabel, readOnlyMonth, user?.id],
   );
 
   return (
@@ -651,16 +644,6 @@ const styles = StyleSheet.create({
     height: 14,
   },
   actions: {
-    gap: 14,
     marginTop: 8,
-  },
-  signOut: {
-    alignSelf: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  signOutText: {
-    fontSize: 15,
-    fontWeight: '600',
   },
 });

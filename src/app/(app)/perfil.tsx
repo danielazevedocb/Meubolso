@@ -8,6 +8,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
 } from 'react-native';
@@ -31,7 +32,7 @@ export default function PerfilScreen() {
   const navHeaderHeight = useHeaderHeight();
   const scheme = useColorScheme() ?? 'light';
   const palette = Colors[scheme];
-  const { profile, user, refreshProfile } = useAuth();
+  const { profile, user, refreshProfile, signOut } = useAuth();
 
   const email = user?.email?.trim() ?? '';
 
@@ -242,6 +243,17 @@ export default function PerfilScreen() {
           loading={pwdForm.formState.isSubmitting}
           onPress={() => void onChangePassword()}
         />
+
+        <Text style={[styles.sectionTitle, styles.sectionSpacer, { color: palette.text }]}>
+          Sessão
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Encerrar sessão"
+          onPress={() => void signOut()}
+          style={({ pressed }) => [styles.signOut, { opacity: pressed ? 0.65 : 1 }]}>
+          <Text style={[styles.signOutText, { color: palette.balanceNegative }]}>Encerrar sessão</Text>
+        </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -300,5 +312,16 @@ const styles = StyleSheet.create({
   },
   field: {
     marginBottom: 14,
+  },
+  signOut: {
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  signOutText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
