@@ -1,0 +1,80 @@
+import { generateInviteCode } from '@/lib/invite-code';
+import { supabase } from '@/lib/supabase';
+import type { InviteLookupRow } from '@/types/database.types';
+
+const MAX_MEMBERS_DEFAULT = 6;
+
+export async function countUserGroupMemberships(userId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('group_members')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function fetchProfile(userId: string) {
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function lookupInvite(inviteCode: string): Promise<InviteLookupRow[]> {
+  const { data, error } = await supabase.rpc('lookup_group_by_invite', {
+    p_invite_code: inviteCode.trim(),
+  });
+
+  if (error) throw error;
+  return (data ?? []) as InviteLookupRow[];
+}
+
+export function isGroupFull(row: InviteLookupRow): boolean {
+  return row.current_member_count >= MAX_MEMBERS_DEFAULT;
+}
+
+export async function joinGroupByInvite(inviteCode: string): Promise<string> {
+  const { data, error } = await supabase.rpc('join_group_by_invite', {
+    p_invite_code: inviteCode.trim(),
+  });
+
+  if (error) throw error;
+  return data as string;
+}
+
+const INSERT_CONFLICT_CODE = '23505';
+const MAX_INVITE_RETRIES = 5;
+
+export async function createGroup(input: { name: string; creatorId: string }): Promise<{
+  groupId: string;
+  inviteCode: string;
+}> {
+  const trimmed = input.name.trim();
+
+  for (let attempt = 0; attempt < MAX_INVITE_RETRIES; attempt++) {
+    const inviteCode = generateInviteCode();
+
+    const { data, error } = await supabase
+      .from('groups')
+      .insert({
+        name: trimmed,
+        invite_code: inviteCode,
+        created_by: input.creatorId,
+      })
+      .select('id')
+      .single();
+
+    if (!error && data) {
+      return { groupId: data.id, inviteCode };
+    }
+
+    if (error?.code === INSERT_CONFLICT_CODE) {
+      continue;
+    }
+
+    throw error;
+  }
+
+  throw new Error('Não foi possível gerar um código de convite único. Tente novamente.');
+}

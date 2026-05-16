@@ -1,14 +1,23 @@
 import { StyleSheet } from 'react-native';
 
-import EditScreenInfo from '@/components/EditScreenInfo';
+import { PrimaryButton } from '@/components/PrimaryButton';
 import { Text, View } from '@/components/Themed';
 
-export default function TabOneScreen() {
+import { useAuth } from '@/hooks/useAuth';
+
+export default function HomeScreen() {
+  const { profile, user, signOut } = useAuth();
+
+  const displayName =
+    profile?.display_name?.trim() || user?.email?.split('@')[0] || 'usuário';
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tab One</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/index.tsx" />
+      <Text style={styles.title}>Olá, {displayName}</Text>
+      <Text style={styles.caption}>
+        Você está autenticado. As telas de mês/contas virão nas próximas entregas do backlog.
+      </Text>
+      <PrimaryButton label="Encerrar sessão" onPress={() => void signOut()} />
     </View>
   );
 }
@@ -16,16 +25,18 @@ export default function TabOneScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    gap: 16,
     justifyContent: 'center',
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '800',
   },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
+  caption: {
+    fontSize: 14,
+    lineHeight: 20,
+    opacity: 0.8,
   },
 });

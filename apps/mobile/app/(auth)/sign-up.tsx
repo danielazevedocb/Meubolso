@@ -6,49 +6,85 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-na
 import { FormTextField } from '@/components/FormTextField';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Text, View } from '@/components/Themed';
-import type { SignInValues } from '@/forms/auth-group-schemas';
-import { signInSchema } from '@/forms/auth-group-schemas';
+import type { SignUpValues } from '@/forms/auth-group-schemas';
+import { signUpSchema } from '@/forms/auth-group-schemas';
 import { supabase } from '@/lib/supabase';
 import { mapAuthError } from '@/services/supabase-errors';
 import { useState } from 'react';
 
-export default function SignInScreen() {
+export default function SignUpScreen() {
   const [banner, setBanner] = useState<string | null>(null);
+  const [confirmEmailBanner, setConfirmEmailBanner] = useState<string | null>(null);
 
   const {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<SignInValues>({
-    resolver: zodResolver(signInSchema),
-    defaultValues: { email: '', password: '' },
+  } = useForm<SignUpValues>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: { displayName: '', email: '', password: '' },
   });
 
   const onSubmit = handleSubmit(async (values) => {
     setBanner(null);
-    const { error } = await supabase.auth.signInWithPassword({
+    setConfirmEmailBanner(null);
+    const { data, error } = await supabase.auth.signUp({
       email: values.email.trim(),
       password: values.password,
+      options: {
+        data: { name: values.displayName.trim() },
+      },
     });
-    if (error) setBanner(mapAuthError(error));
+    if (error) {
+      setBanner(mapAuthError(error));
+      return;
+    }
+    if (!data.session) {
+      setConfirmEmailBanner(
+        'Enviamos um link para confirmar seu e-mail. Após confirmar, volte e entre na conta.',
+      );
+      return;
+    }
   });
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Entrar' }} />
+      <Stack.Screen options={{ title: 'Criar conta' }} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={styles.card}>
-            <Text style={styles.title}>Entrar</Text>
-            <Text style={styles.sub}>Use seu e-mail e senha para acessar o Meubolso.</Text>
+            <Text style={styles.title}>Criar conta</Text>
+            <Text style={styles.sub}>Cadastre nome, e-mail e senha (PRD).</Text>
 
             {banner ? (
-              <Text accessibilityRole="alert" style={styles.banner}>
+              <Text accessibilityRole="alert" style={styles.bannerError}>
                 {banner}
               </Text>
             ) : null}
+            {confirmEmailBanner ? (
+              <Text accessibilityRole="text" style={styles.bannerInfo}>
+                {confirmEmailBanner}
+              </Text>
+            ) : null}
+
+            <Controller
+              control={control}
+              name="displayName"
+              render={({ field: { value, onChange, onBlur } }) => (
+                <FormTextField
+                  label="Nome"
+                  autoComplete="name"
+                  value={value}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  containerStyle={styles.field}
+                  errorText={errors.displayName?.message}
+                  hint="Como será exibido no app."
+                />
+              )}
+            />
 
             <Controller
               control={control}
@@ -76,24 +112,25 @@ export default function SignInScreen() {
                   label="Senha"
                   secureTextEntry
                   autoCapitalize="none"
-                  textContentType="password"
+                  textContentType="newPassword"
                   value={value}
                   onBlur={onBlur}
                   onChangeText={onChange}
                   containerStyle={styles.field}
                   errorText={errors.password?.message}
+                  hint="Mínimo de 8 caracteres."
                 />
               )}
             />
 
             <PrimaryButton
-              label="Entrar"
+              label="Cadastrar e continuar"
               loading={isSubmitting}
               onPress={() => void onSubmit()}
             />
 
-            <Link href="/(auth)/sign-up" accessibilityRole="link" style={styles.link}>
-              Novo aqui? Criar conta
+            <Link href="/(auth)/sign-in" accessibilityRole="link" style={styles.link}>
+              Já tenho conta
             </Link>
           </View>
         </ScrollView>
@@ -128,13 +165,22 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     lineHeight: 22,
   },
-  banner: {
+  bannerError: {
     padding: 12,
     marginBottom: 16,
     borderRadius: 8,
     overflow: 'hidden',
     fontSize: 14,
     color: '#c62828',
+  },
+  bannerInfo: {
+    padding: 12,
+    marginBottom: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+    fontSize: 14,
+    opacity: 0.85,
+    lineHeight: 20,
   },
   field: {
     marginBottom: 14,

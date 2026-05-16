@@ -45,11 +45,11 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 
 | Tarefa | Status |
 |--------|--------|
-| Integrar Supabase Auth (e-mail/senha) no app | pendente |
-| Fluxo de cadastro e login com validação (Zod/RHF conforme regras) | pendente |
-| Sessão persistente segura (ex.: SecureStore onde aplicável) | pendente |
-| Gating de rotas Expo Router (onboarding autenticado vs. convidado) | pendente |
-| Exibir identidade do usuário (nome/avatar quando houver) | pendente |
+| Integrar Supabase Auth (e-mail/senha) no app | concluído — `apps/mobile/app/(auth)/sign-in.tsx`, `(auth)/sign-up.tsx`, cliente `src/lib/supabase.ts` |
+| Fluxo de cadastro e login com validação (Zod/RHF conforme regras) | concluído — `react-hook-form` + `zod` + schemas em `src/forms/auth-group-schemas.ts` |
+| Sessão persistente segura (ex.: SecureStore onde aplicável) | concluído — persistência oficial com AsyncStorage (`supabase.ts`); avaliar SecureStore numa revisão posterior de modelo de tokens |
+| Gating de rotas Expo Router (onboarding autenticado vs. convidado) | concluído — `Stack.Protected` + `AuthProvider` em `app/_layout.tsx`; fluxos `(auth)` / `(onboarding)` / `(tabs)` |
+| Exibir identidade do usuário (nome/avatar quando houver) | concluído — nome na home (`profiles.display_name`); avatar quando campo existir (UI placeholder futura) |
 
 ---
 
@@ -66,7 +66,7 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 
 | Tarefa | Status |
 |--------|--------|
-| Onboarding: criar grupo / entrar com código / usar solo | pendente |
+| Onboarding: criar grupo / entrar com código / usar solo | concluído — `app/(onboarding)/` + RPC `join_group_by_invite` / pref. solo AsyncStorage `@meubolso/pref_solo_mode` |
 | Tela principal: mês atual, navegação entre meses, cards por membro | pendente |
 | Tela de contas por membro: lista, totais, salário, nota do mês | pendente |
 | Adicionar/editar conta (modal/tela) + confirmação ao editar conta de outro membro | pendente |
@@ -102,8 +102,8 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 
 | # | Tarefa | Status |
 |---|--------|--------|
-| 1 | Cadastro e login e-mail/senha | pendente |
-| 2 | Criar grupo e convidar por código | pendente |
+| 1 | Cadastro e login e-mail/senha | concluído |
+| 2 | Criar grupo e convidar por código | concluído |
 | 3 | Membros veem contas uns dos outros em tempo real | pendente |
 | 4 | Adicionar conta reflete imediatamente para outros | pendente |
 | 5 | Saldo recalculado automaticamente | pendente |
