@@ -1,6 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -9,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   Switch,
+  type ListRenderItemInfo,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -30,6 +31,92 @@ import type { BillRow } from '@/types/finance';
 const money = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
   currency: 'BRL',
+});
+
+type ThemePalette = (typeof Colors)['light'];
+
+type ContasBillCardProps = {
+  bill: BillRow;
+  palette: ThemePalette;
+  readOnlyMonth: boolean;
+  selfUserId: string | undefined;
+  onTogglePaid: (billId: string, nextPaid: boolean) => void;
+  onEdit: (bill: BillRow) => void;
+  onConfirmDelete: (bill: BillRow) => void;
+};
+
+const ContasBillCard = memo(function ContasBillCard({
+  bill,
+  palette,
+  readOnlyMonth,
+  selfUserId,
+  onTogglePaid,
+  onEdit,
+  onConfirmDelete,
+}: ContasBillCardProps) {
+  const foreign = !!selfUserId && bill.user_id !== selfUserId;
+  const canMutate = !readOnlyMonth;
+
+  return (
+    <View
+      style={[
+        styles.billCard,
+        { borderColor: palette.borderSubtle, backgroundColor: palette.surfaceSubtle },
+      ]}>
+      <View style={styles.billTop}>
+        <View style={styles.billTitleCol}>
+          <Text style={styles.billCompany}>{bill.company}</Text>
+          {foreign ? (
+            <Text style={[styles.foreignHint, { color: palette.caption }]}>Conta de outro membro</Text>
+          ) : null}
+        </View>
+        <Text style={styles.billAmount}>{money.format(bill.amount)}</Text>
+      </View>
+      <View style={styles.billMeta}>
+        {bill.due_date ? (
+          <Text style={[styles.due, { color: palette.caption }]}>Vence em {bill.due_date}</Text>
+        ) : (
+          <Text style={[styles.due, { color: palette.caption }]}>Sem vencimento</Text>
+        )}
+        <Text style={[styles.paidTag, { color: bill.paid ? palette.balancePositive : palette.caption }]}>
+          {bill.paid ? 'Pago' : 'Pendente'}
+        </Text>
+      </View>
+      {bill.note ? <Text style={[styles.billNote, { color: palette.caption }]}>{bill.note}</Text> : null}
+      <View style={styles.billActions}>
+        <View style={styles.paidToggle}>
+          <Text style={styles.paidToggleLabel}>Pago</Text>
+          <Switch
+            accessibilityLabel={`Marcar ${bill.company} como ${bill.paid ? 'pendente' : 'pago'}`}
+            value={bill.paid}
+            disabled={!canMutate}
+            onValueChange={(v) => onTogglePaid(bill.id, v)}
+            trackColor={{ false: '#888', true: palette.tint }}
+          />
+        </View>
+        <View style={styles.inlineBtns}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Editar ${bill.company}`}
+            accessibilityState={{ disabled: !canMutate }}
+            disabled={!canMutate}
+            onPress={() => onEdit(bill)}
+            style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.55 : !canMutate ? 0.35 : 1 }]}>
+            <FontAwesome name="pencil" size={18} color={palette.tint} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Excluir ${bill.company}`}
+            accessibilityState={{ disabled: !canMutate }}
+            disabled={!canMutate}
+            onPress={() => onConfirmDelete(bill)}
+            style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.55 : !canMutate ? 0.35 : 1 }]}>
+            <FontAwesome name="trash" size={18} color={palette.balanceNegative} />
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
 });
 
 export default function ContasScreen() {
@@ -177,90 +264,24 @@ export default function ContasScreen() {
     }
   }, [monthNoteInput, salaryInput, saveMonthSalaryNote]);
 
+  const handleTogglePaid = useCallback(
+    (billId: string, nextPaid: boolean) => void setPaidOptimistic(billId, nextPaid),
+    [setPaidOptimistic],
+  );
+
   const renderBill = useCallback(
-    ({ item: b }: { item: BillRow }) => {
-      const foreign = !!user?.id && b.user_id !== user.id;
-      const canMutate = !readOnlyMonth;
-      return (
-        <View
-          style={[
-            styles.billCard,
-            { borderColor: palette.borderSubtle, backgroundColor: palette.surfaceSubtle },
-          ]}>
-          <View style={styles.billTop}>
-            <View style={styles.billTitleCol}>
-              <Text style={styles.billCompany}>{b.company}</Text>
-              {foreign ? (
-                <Text style={[styles.foreignHint, { color: palette.caption }]}>
-                  Conta de outro membro
-                </Text>
-              ) : null}
-            </View>
-            <Text style={styles.billAmount}>{money.format(b.amount)}</Text>
-          </View>
-          <View style={styles.billMeta}>
-            {b.due_date ? (
-              <Text style={[styles.due, { color: palette.caption }]}>
-                Vence em {b.due_date}
-              </Text>
-            ) : (
-              <Text style={[styles.due, { color: palette.caption }]}>Sem vencimento</Text>
-            )}
-            <Text style={[styles.paidTag, { color: b.paid ? palette.balancePositive : palette.caption }]}>
-              {b.paid ? 'Pago' : 'Pendente'}
-            </Text>
-          </View>
-          {b.note ? (
-            <Text style={[styles.billNote, { color: palette.caption }]}>{b.note}</Text>
-          ) : null}
-          <View style={styles.billActions}>
-            <View style={styles.paidToggle}>
-              <Text style={styles.paidToggleLabel}>Pago</Text>
-              <Switch
-                accessibilityLabel={`Marcar ${b.company} como ${b.paid ? 'pendente' : 'pago'}`}
-                value={b.paid}
-                disabled={!canMutate}
-                onValueChange={(v) => void setPaidOptimistic(b.id, v)}
-                trackColor={{ false: '#888', true: palette.tint }}
-              />
-            </View>
-            <View style={styles.inlineBtns}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Editar ${b.company}`}
-                accessibilityState={{ disabled: !canMutate }}
-                disabled={!canMutate}
-                onPress={() => openEdit(b)}
-                style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.55 : !canMutate ? 0.35 : 1 }]}>
-                <FontAwesome name="pencil" size={18} color={palette.tint} />
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Excluir ${b.company}`}
-                accessibilityState={{ disabled: !canMutate }}
-                disabled={!canMutate}
-                onPress={() => confirmDelete(b)}
-                style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.55 : !canMutate ? 0.35 : 1 }]}>
-                <FontAwesome name="trash" size={18} color={palette.balanceNegative} />
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      );
-    },
-    [
-      confirmDelete,
-      openEdit,
-      palette.balanceNegative,
-      palette.balancePositive,
-      palette.borderSubtle,
-      palette.caption,
-      palette.surfaceSubtle,
-      palette.tint,
-      readOnlyMonth,
-      setPaidOptimistic,
-      user?.id,
-    ],
+    ({ item }: ListRenderItemInfo<BillRow>) => (
+      <ContasBillCard
+        bill={item}
+        palette={palette}
+        readOnlyMonth={readOnlyMonth}
+        selfUserId={user?.id}
+        onTogglePaid={handleTogglePaid}
+        onEdit={openEdit}
+        onConfirmDelete={confirmDelete}
+      />
+    ),
+    [confirmDelete, handleTogglePaid, openEdit, palette, readOnlyMonth, user?.id],
   );
 
   const {
@@ -322,7 +343,8 @@ export default function ContasScreen() {
   const showImportMenu =
     status === 'success' && !readOnlyMonth && duplicateImport.canOfferImport && activeBillCount > 0;
 
-  const listFooter = (
+  const listFooter = useMemo(
+    () => (
       <View style={styles.footer}>
         <View style={[styles.summary, { borderColor: palette.borderSubtle }]}>
           <View style={styles.summaryRow}>
@@ -372,7 +394,23 @@ export default function ContasScreen() {
           loading={monthMetaSaving}
         />
       </View>
-    );
+    ),
+    [
+      activeMemberName,
+      balance,
+      balanceColor,
+      billsTotal,
+      monthMetaSaving,
+      monthNoteInput,
+      monthRow,
+      palette.borderSubtle,
+      palette.caption,
+      readOnlyMonth,
+      salaryInput,
+      saveMonthMeta,
+      status,
+    ],
+  );
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: palette.background }]} edges={['top']}>

@@ -11,7 +11,7 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 | Tarefa | Status |
 |--------|--------|
 | Criar documentação do agente (`agente.md`, `task.md`, `guia-desenvolvimento.md`) | concluído |
-| Revisar PRD vs. implementação e ajustar gaps de escopo | parcial — matriz §11 atualizada conforme código; gaps: Realtime no cliente (§11.3–4), escolha de mês de origem na cópia (§11.12) |
+| Revisar PRD vs. implementação e ajustar gaps de escopo | concluído — revisão interna alinha código + PRD/matrix §11; gaps residuais documentados: Realtime no cliente (§11.3–4), seletor de mês de origem na cópia (§11.12) |
 | Definir convenção de branches e PRs com o time | pendente |
 
 ---
