@@ -36,7 +36,7 @@ const money = new Intl.NumberFormat('pt-BR', {
 
 export default function HomeScreen() {
   const navigation = useNavigation();
-  const { profile, user, signOut, refreshOnboarding } = useAuth();
+  const { profile, user, signOut, refreshOnboarding, openOnboardingChooser } = useAuth();
   const scheme = useColorScheme() ?? 'light';
   const palette = Colors[scheme];
 
@@ -94,10 +94,18 @@ export default function HomeScreen() {
   });
 
   const monthTitle = formatMonthHeadingPt(monthLabel);
-  const handleSoloBackToChoices = useCallback(async () => {
+  const handleHomeBackToOnboarding = useCallback(async () => {
     try {
-      await setSoloPreference(false);
-      await refreshOnboarding();
+      if (context?.mode === 'solo') {
+        await setSoloPreference(false);
+        await refreshOnboarding();
+      } else {
+        await openOnboardingChooser();
+        // RootGate precisa de um paint com `reopenOnboarding` antes do replace passar no guard.
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => resolve());
+        });
+      }
       router.replace('/(onboarding)');
     } catch {
       Alert.alert(
@@ -105,16 +113,16 @@ export default function HomeScreen() {
         'Tente novamente ou encerre a sessão e entre de novo.',
       );
     }
-  }, [refreshOnboarding]);
+  }, [context?.mode, refreshOnboarding, openOnboardingChooser]);
 
-  /** Solo: mesma aparência do Stack (onboarding). Mostrar desde que a pref solo ou o contexto digam solo — não esperar só `loadMonthOverview`. */
-  const showSoloBackButton = useMemo(() => {
-    if (context?.mode === 'group') return false;
+  /** Solo ou grupo: seta no header como no onboarding — volta para escolher modo / grupo. */
+  const showHomeBackButton = useMemo(() => {
+    if (context?.mode === 'group') return true;
     return context?.mode === 'solo' || soloModeFromPrefs;
   }, [context?.mode, soloModeFromPrefs]);
 
   useLayoutEffect(() => {
-    if (showSoloBackButton) {
+    if (showHomeBackButton) {
       navigation.setOptions({
         headerTintColor: palette.text,
         headerStyle: { backgroundColor: palette.background },
@@ -123,8 +131,12 @@ export default function HomeScreen() {
             {...headerProps}
             displayMode="minimal"
             tintColor={palette.text}
-            accessibilityLabel="Voltar para escolher modo de uso"
-            onPress={() => void handleSoloBackToChoices()}
+            accessibilityLabel={
+              context?.mode === 'group'
+                ? 'Voltar para escolher grupo ou modo de uso'
+                : 'Voltar para escolher modo de uso'
+            }
+            onPress={() => void handleHomeBackToOnboarding()}
           />
         ),
       });
@@ -137,10 +149,11 @@ export default function HomeScreen() {
     }
   }, [
     navigation,
-    showSoloBackButton,
+    showHomeBackButton,
     palette.text,
     palette.background,
-    handleSoloBackToChoices,
+    handleHomeBackToOnboarding,
+    context?.mode,
   ]);
 
   const groupBillsTotal = useMemo(

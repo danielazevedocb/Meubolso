@@ -41,7 +41,7 @@ export default function RootLayout() {
 
 function RootGate() {
   const colorScheme = useColorScheme();
-  const { session, initialized, routingReady, onboardingComplete } = useAuth();
+  const { session, initialized, routingReady, onboardingComplete, reopenOnboarding } = useAuth();
 
   const splashMayHide = initialized && (!session || routingReady);
 
@@ -58,8 +58,9 @@ function RootGate() {
   }
 
   const gatedAuth = !session;
-  const gatedOnboarding = Boolean(session && !onboardingComplete);
-  const gatedApp = Boolean(session && onboardingComplete);
+  /** Grupo: `onboardingComplete` fica true com membros — `reopenOnboarding` força o stack inicial. */
+  const gatedOnboarding = Boolean(session && (!onboardingComplete || reopenOnboarding));
+  const gatedApp = Boolean(session && onboardingComplete && !reopenOnboarding);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

@@ -22,8 +22,12 @@ type AuthContextValue = {
   routingReady: boolean;
   profile: ProfileRow | null;
   onboardingComplete: boolean;
+  /** True quando o utilizador pediu o ecrã inicial (onboarding) com sessão já configurada. */
+  reopenOnboarding: boolean;
   refreshProfile: () => Promise<void>;
   refreshOnboarding: () => Promise<void>;
+  /** Reabre o stack (onboarding) sem desligar sessão — ex.: seta na Visão geral em grupo. */
+  openOnboardingChooser: () => Promise<void>;
   confirmSoloMode: () => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -36,6 +40,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [routingReady, setRoutingReady] = useState(false);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
+  /** Quando true, o root stack mostra (onboarding) mesmo com grupo/solo já configurado. */
+  const [reopenOnboarding, setReopenOnboarding] = useState(false);
 
   const user = session?.user ?? null;
 
@@ -126,7 +132,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       countUserGroupMemberships(user.id),
     ]);
     setOnboardingComplete(solo || memberCount > 0);
+    setReopenOnboarding(false);
   }, [user?.id]);
+
+  const openOnboardingChooser = useCallback(async () => {
+    setReopenOnboarding(true);
+  }, []);
 
   const confirmSoloMode = useCallback(async () => {
     await setSoloPreference(true);
@@ -138,6 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await setSoloPreference(false);
     setProfile(null);
     setOnboardingComplete(false);
+    setReopenOnboarding(false);
   }, []);
 
   const value = useMemo<AuthContextValue>(
@@ -148,8 +160,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       routingReady,
       profile,
       onboardingComplete,
+      reopenOnboarding,
       refreshProfile,
       refreshOnboarding,
+      openOnboardingChooser,
       confirmSoloMode,
       signOut,
     }),
@@ -160,8 +174,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       routingReady,
       profile,
       onboardingComplete,
+      reopenOnboarding,
       refreshProfile,
       refreshOnboarding,
+      openOnboardingChooser,
       confirmSoloMode,
       signOut,
     ],

@@ -17,3 +17,6 @@ Thumbs.db
 # Cursor / IDE local
 .cursor/
 
+# Supabase CLI artefatos locais
+supabase/.temp/
+

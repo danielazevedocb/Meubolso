@@ -1,3 +1,4 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { memo } from 'react';
 import { Platform, Pressable, StyleSheet, View as RNView } from 'react-native';
 
@@ -74,6 +75,14 @@ export const MemberMonthCard = memo(function MemberMonthCard({
             <RNView
               accessibilityLabel={`${snapshot.displayName} está online`}
               style={[styles.onlineDot, { backgroundColor: c.balancePositive }]}
+            />
+          ) : null}
+          {onPress ? (
+            <FontAwesome
+              name="chevron-right"
+              size={18}
+              color={c.tint}
+              importantForAccessibility="no"
             />
           ) : null}
         </RNView>
