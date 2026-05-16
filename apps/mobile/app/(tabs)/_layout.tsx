@@ -34,13 +34,17 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
           headerRight: () => (
             <Link href="/modal" asChild>
-              <Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Informações do app"
+                hitSlop={12}
+                style={{ marginRight: 15, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
                 {({ pressed }) => (
                   <FontAwesome
                     name="info-circle"
                     size={25}
                     color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
+                    style={{ opacity: pressed ? 0.5 : 1 }}
                   />
                 )}
               </Pressable>

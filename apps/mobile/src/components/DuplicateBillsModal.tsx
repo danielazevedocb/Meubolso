@@ -62,8 +62,16 @@ export function DuplicateBillsModal({
 
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={executing ? undefined : onClose}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Fechar diálogo"
+        accessibilityState={{ disabled: executing }}
+        accessibilityHint="Toque fora do painel para cancelar a cópia"
+        style={styles.backdrop}
+        disabled={executing}
+        onPress={executing ? undefined : onClose}>
         <Pressable
+          accessible={false}
           style={[styles.sheet, { backgroundColor: palette.background, borderColor: palette.borderSubtle }]}
           onPress={(e) => e.stopPropagation()}>
           <Text style={[styles.title, { color: palette.text }]}>Copiar contas</Text>

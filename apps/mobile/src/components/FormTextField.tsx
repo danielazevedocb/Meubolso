@@ -28,6 +28,13 @@ export function FormTextField({
     scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)';
   const textColor = scheme === 'dark' ? Colors.dark.text : Colors.light.text;
 
+  const a11yHint =
+    errorText && hint
+      ? `Erro: ${errorText}. ${hint}`
+      : errorText
+        ? `Erro: ${errorText}`
+        : hint;
+
   return (
     <View style={containerStyle}>
       <Text accessibilityRole="text" style={styles.label}>
@@ -47,6 +54,7 @@ export function FormTextField({
         ]}
         placeholderTextColor={scheme === 'dark' ? '#999' : '#666'}
         accessibilityLabel={label}
+        accessibilityHint={a11yHint}
       />
       {errorText ? (
         <Text accessibilityRole="alert" style={styles.error}>

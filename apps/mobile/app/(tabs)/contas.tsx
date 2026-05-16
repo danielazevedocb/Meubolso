@@ -434,6 +434,10 @@ export default function ContasScreen() {
 
       {errorMessage ? (
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Dispensar aviso de erro"
+          accessibilityHint={errorMessage}
+          hitSlop={8}
           onPress={dismissError}
           style={[styles.errBanner, { backgroundColor: palette.surfaceSubtle, borderColor: palette.borderSubtle }]}>
           <Text style={styles.errText}>{errorMessage}</Text>

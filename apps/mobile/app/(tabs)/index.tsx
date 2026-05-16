@@ -87,7 +87,7 @@ export default function HomeScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Mês anterior"
-            hitSlop={8}
+            hitSlop={12}
             onPress={goPrevMonth}
             style={({ pressed }) => [styles.monthChevron, { opacity: pressed ? 0.55 : 1 }]}>
             <FontAwesome name="chevron-left" size={18} color={palette.tint} />
@@ -96,7 +96,7 @@ export default function HomeScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Próximo mês"
-            hitSlop={8}
+            hitSlop={12}
             onPress={goNextMonth}
             style={({ pressed }) => [styles.monthChevron, { opacity: pressed ? 0.55 : 1 }]}>
             <FontAwesome name="chevron-right" size={18} color={palette.tint} />

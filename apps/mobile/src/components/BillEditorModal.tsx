@@ -346,6 +346,7 @@ export function BillEditorModal({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Fechar"
+            hitSlop={8}
             onPress={onClose}
             style={({ pressed }) => [styles.secondaryBtn, { opacity: pressed ? 0.65 : 1 }]}>
             <Text style={[styles.secondaryLabel, { color: c.tint }]}>Fechar</Text>

@@ -82,10 +82,10 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 
 | Tarefa | Status |
 |--------|--------|
-| Configurar Jest + @testing-library/react-native | pendente |
-| Testes unitários/integrados para hooks e services críticos | pendente |
-| E2E (Detox ou estratégia definida) para login + fluxo principal | pendente |
-| Checagens manuais ou automatizadas de acessibilidade (RN) | pendente |
+| Configurar Jest + @testing-library/react-native | concluído — `apps/mobile/jest.config.js`, `jest.setup.ts`, scripts `test` / `test:watch` |
+| Testes unitários/integrados para hooks e services críticos | concluído (smoke) — `src/lib/__tests__/month-key.test.ts`, `bill-company.test.ts`; `src/components/__tests__/PrimaryButton.test.tsx` |
+| E2E (Detox ou estratégia definida) para login + fluxo principal | pendente — **E2E não configurado** (sem Detox/Maestro no repo); apenas Jest |
+| Checagens manuais ou automatizadas de acessibilidade (RN) | parcial — checklist aplicada às telas-chave (rótulos/hitSlop em botões só ícone, banner de erro, hints em `FormTextField`, modal de duplicação); revisão completa de foco/teclado e modais avançados fica para próximo passo |
 
 ---
 
