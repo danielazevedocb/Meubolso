@@ -1,7 +1,7 @@
 import '@/lib/supabase';
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { Stack } from 'expo-router';
@@ -13,6 +13,7 @@ import { AuthProvider } from '@/providers/AuthProvider';
 import { useAuth } from '@/hooks/useAuth';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { buildNavigationTheme, type AppColorScheme } from '@/navigation/theme';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -41,6 +42,8 @@ export default function RootLayout() {
 
 function RootGate() {
   const colorScheme = useColorScheme();
+  const scheme: AppColorScheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const navigationTheme = buildNavigationTheme(scheme);
   const { session, initialized, routingReady, onboardingComplete, reopenOnboarding } = useAuth();
 
   const splashMayHide = initialized && (!session || routingReady);
@@ -63,7 +66,7 @@ function RootGate() {
   const gatedApp = Boolean(session && onboardingComplete && !reopenOnboarding);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={navigationTheme}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Protected guard={gatedAuth}>
           <Stack.Screen name="(auth)" />

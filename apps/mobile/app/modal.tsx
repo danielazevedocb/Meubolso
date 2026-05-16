@@ -10,6 +10,7 @@ import { Text, View } from '@/components/Themed';
 import { aboutLinks, isConfiguredExternalUrl } from '@/constants/about';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { stackHeaderScreenOptions, type AppColorScheme } from '@/navigation/theme';
 
 function resolveAppVersion(): string {
   return (
@@ -34,8 +35,8 @@ async function openAboutDestination(url: string): Promise<void> {
 
 export default function ModalScreen() {
   const router = useRouter();
-  const scheme = useColorScheme() ?? 'light';
-  const palette = Colors[scheme];
+  const appScheme: AppColorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const palette = Colors[appScheme];
   const version = resolveAppVersion();
 
   const linkEntries: { key: string; label: string; url: string }[] = [
@@ -63,6 +64,7 @@ export default function ModalScreen() {
     <>
       <Stack.Screen
         options={{
+          ...stackHeaderScreenOptions(appScheme),
           title: 'Sobre',
           headerShown: true,
           headerRight: () => (

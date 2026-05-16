@@ -5,14 +5,15 @@ import { Pressable } from 'react-native';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { stackHeaderScreenOptions, type AppColorScheme } from '@/navigation/theme';
 
 export default function OnboardingLayout() {
   const { session } = useAuth();
-  const scheme = useColorScheme() ?? 'light';
+  const scheme: AppColorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const palette = Colors[scheme];
 
   return (
-    <Stack initialRouteName="index">
+    <Stack initialRouteName="index" screenOptions={stackHeaderScreenOptions(scheme)}>
       <Stack.Screen
         name="index"
         options={{

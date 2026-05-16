@@ -170,7 +170,7 @@ export default function HomeScreen() {
     if (showHomeBackButton) {
       navigation.setOptions({
         headerTintColor: palette.text,
-        headerStyle: { backgroundColor: palette.background },
+        headerStyle: { backgroundColor: palette.surfaceSubtle },
         headerLeft: (headerProps) => (
           <HeaderBackButton
             {...headerProps}
@@ -196,7 +196,7 @@ export default function HomeScreen() {
     navigation,
     showHomeBackButton,
     palette.text,
-    palette.background,
+    palette.surfaceSubtle,
     handleHomeBackToOnboarding,
     context?.mode,
   ]);
