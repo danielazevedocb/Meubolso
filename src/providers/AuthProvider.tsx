@@ -9,6 +9,7 @@ import {
   ensureSelfProfile,
   fetchProfile,
 } from '@/services/groups';
+import { configureGoogleSignIn } from '@/services/google-auth';
 
 type AuthContextValue = {
   session: Session | null;
@@ -45,6 +46,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profileRow = await fetchProfile(authUser.id);
     }
     setProfile((profileRow ?? null) as ProfileRow | null);
+  }, []);
+
+  useEffect(() => {
+    configureGoogleSignIn();
   }, []);
 
   useEffect(() => {

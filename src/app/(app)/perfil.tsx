@@ -1,6 +1,6 @@
 import type { AuthError, PostgrestError } from '@supabase/supabase-js';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useHeaderHeight } from '@react-navigation/elements';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {

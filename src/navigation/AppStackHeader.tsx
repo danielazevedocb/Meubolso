@@ -1,5 +1,5 @@
-import { getHeaderTitle } from '@react-navigation/elements';
-import type { NativeStackHeaderProps } from '@react-navigation/native-stack';
+import { getHeaderTitle } from 'expo-router/react-navigation';
+import type { NativeStackHeaderProps } from 'expo-router/build/react-navigation/native-stack';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

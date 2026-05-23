@@ -1,6 +1,6 @@
 import { useLayoutEffect, type DependencyList } from 'react';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
+import { useNavigation } from 'expo-router';
+import type { NativeStackNavigationOptions } from 'expo-router/build/react-navigation/native-stack';
 
 import { mergeStackHeaderOptions, type AppColorScheme } from '@/navigation/theme';
 import { useColorScheme } from '@/hooks/useColorScheme';

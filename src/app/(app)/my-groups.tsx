@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet } from 'react-native';
 
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenBody } from '@/components/ScreenBody';

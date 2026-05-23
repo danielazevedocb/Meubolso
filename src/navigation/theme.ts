@@ -1,6 +1,5 @@
-import type { Theme } from '@react-navigation/native';
-import { DarkTheme, DefaultTheme } from '@react-navigation/native';
-import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
+import { DarkTheme, DefaultTheme } from 'expo-router';
+import type { NativeStackNavigationOptions } from 'expo-router/build/react-navigation/native-stack';
 import { Platform } from 'react-native';
 
 import Colors from '@/constants/Colors';
@@ -21,7 +20,7 @@ export function statusBarStyle(scheme: AppColorScheme): 'light' | 'dark' {
   return scheme === 'dark' ? 'light' : 'dark';
 }
 
-export function buildNavigationTheme(scheme: AppColorScheme): Theme {
+export function buildNavigationTheme(scheme: AppColorScheme) {
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const palette = Colors[scheme];
   const headerBg = headerBarColor(scheme);

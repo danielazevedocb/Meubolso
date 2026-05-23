@@ -1,7 +1,8 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
 import Animated, {
   Easing,
   FadeIn,
@@ -18,15 +19,21 @@ import { FormTextField } from '@/components/FormTextField';
 import { MeubolsoWordmark } from '@/components/MeubolsoWordmark';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Text, View } from '@/components/Themed';
+import Colors from '@/constants/Colors';
 import type { SignInValues } from '@/forms/auth-group-schemas';
 import { signInSchema } from '@/forms/auth-group-schemas';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { supabase } from '@/lib/supabase';
+import { signInWithGoogle } from '@/services/google-auth';
 import { mapAuthError } from '@/services/supabase-errors';
 
 const STAGGER = 70;
 
 export default function SignInScreen() {
+  const scheme = useColorScheme() ?? 'light';
+  const palette = Colors[scheme];
   const [banner, setBanner] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const pulse = useSharedValue(1);
 
@@ -68,6 +75,17 @@ export default function SignInScreen() {
     });
     if (error) setBanner(mapAuthError(error));
   });
+
+  const onGoogleSignIn = async () => {
+    setBanner(null);
+    setGoogleLoading(true);
+    try {
+      const err = await signInWithGoogle();
+      if (err) setBanner(err);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -147,7 +165,40 @@ export default function SignInScreen() {
               />
             </Animated.View>
 
-            <Animated.View entering={FadeInDown.delay(STAGGER * 4).duration(450)}>
+            <Animated.View entering={FadeInDown.delay(STAGGER * 4).duration(450)} style={styles.dividerRow}>
+              <View style={[styles.dividerLine, { backgroundColor: palette.borderSubtle }]} />
+              <Text style={[styles.dividerText, { color: palette.caption }]}>ou</Text>
+              <View style={[styles.dividerLine, { backgroundColor: palette.borderSubtle }]} />
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(STAGGER * 5).duration(450)}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Entrar com Google"
+                disabled={googleLoading || isSubmitting}
+                onPress={() => void onGoogleSignIn()}
+                style={({ pressed }) => [
+                  styles.googleBtn,
+                  {
+                    borderColor: palette.borderSubtle,
+                    backgroundColor: palette.surfaceSubtle,
+                    opacity: pressed || googleLoading || isSubmitting ? 0.7 : 1,
+                  },
+                ]}>
+                {googleLoading ? (
+                  <ActivityIndicator size="small" color={palette.text} />
+                ) : (
+                  <>
+                    <FontAwesome name="google" size={18} color="#EA4335" style={styles.googleIcon} />
+                    <Text style={[styles.googleLabel, { color: palette.text }]}>
+                      Entrar com Google
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(STAGGER * 6).duration(450)}>
               <Link href="/(auth)/sign-up" asChild>
                 <Pressable accessibilityRole="link">
                   <Text style={styles.link}>Novo aqui? Criar conta</Text>
@@ -210,5 +261,38 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     color: '#2f95dc',
     textDecorationLine: 'underline',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 4,
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
+  dividerText: {
+    fontSize: 13,
+  },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    marginTop: 8,
+    minHeight: 48,
+    gap: 10,
+  },
+  googleIcon: {
+    lineHeight: 20,
+  },
+  googleLabel: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
