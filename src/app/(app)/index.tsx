@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
-import { MeubolsoWordmark } from '@/components/MeubolsoWordmark';
-import { PrimaryButton } from '@/components/PrimaryButton';
-import { ScreenBody } from '@/components/ScreenBody';
-import { Text, View } from '@/components/Themed';
+import { MeubolsoWordmark } from '@/components/shared/MeubolsoWordmark';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { ScreenBody } from '@/components/ui/ScreenBody';
+import { Text, View } from '@/components/ui/Themed';
 import { useAuth } from '@/hooks/useAuth';
 
 const ENTER_DURATION = 420;

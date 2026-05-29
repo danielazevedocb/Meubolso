@@ -15,16 +15,17 @@ import {
 
 import { useFocusEffect } from 'expo-router';
 
-import { MemberMonthCard } from '@/components/MemberMonthCard';
-import { DuplicateBillsModal } from '@/components/DuplicateBillsModal';
-import { PrimaryButton } from '@/components/PrimaryButton';
-import { ScreenBody } from '@/components/ScreenBody';
-import { Text, View } from '@/components/Themed';
+import { MemberMonthCard } from '@/components/shared/MemberMonthCard';
+import { DuplicateBillsModal } from '@/components/shared/DuplicateBillsModal';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { ScreenBody } from '@/components/ui/ScreenBody';
+import { Text, View } from '@/components/ui/Themed';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useDuplicateMonthImport } from '@/hooks/useDuplicateMonthImport';
 import { useGroupPresence } from '@/hooks/useGroupPresence';
+import { useGroupRealtime } from '@/hooks/useGroupRealtime';
 import { useMonthOverview } from '@/hooks/useMonthOverview';
 import { formatMonthHeadingPt } from '@/lib/month-key';
 import type { MemberMonthSnapshot } from '@/types/finance';
@@ -98,6 +99,15 @@ export default function OverviewScreen() {
     groupId: context?.mode === 'group' ? context.groupId : undefined,
     userId: user?.id,
     enabled: presenceEnabled,
+  });
+
+  // Reflete alterações de contas/salário de outros membros sem reload manual.
+  useGroupRealtime({
+    groupId: context?.mode === 'group' ? context.groupId : undefined,
+    userId: user?.id,
+    mode: context?.mode,
+    enabled: status === 'success' && !!context,
+    onChange: reload,
   });
 
   const [inviteCopied, setInviteCopied] = useState(false);
@@ -231,7 +241,7 @@ export default function OverviewScreen() {
             </Text>
             <Text style={[styles.dupBannerBody, { color: palette.caption }]}>
               Ninguém tem contas neste mês ainda (lista vazia no banco). Deseja copiar as contas de{' '}
-              <Text style={{ fontWeight: '700' }}>
+              <Text style={styles.dupBannerStrong}>
                 {formatMonthHeadingPt(duplicateImport.sourceMonthLabel)}
               </Text>
               ? Os salários serão alinhados ao mês anterior; a nota do mês não é copiada.
@@ -606,6 +616,9 @@ const styles = StyleSheet.create({
   },
   inviteCopyBtnLabel: {
     fontSize: 14,
+    fontWeight: '700',
+  },
+  dupBannerStrong: {
     fontWeight: '700',
   },
   aggregate: {

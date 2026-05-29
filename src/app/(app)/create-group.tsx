@@ -9,9 +9,9 @@ import {
   StyleSheet,
 } from 'react-native';
 
-import { FormTextField } from '@/components/FormTextField';
-import { PrimaryButton } from '@/components/PrimaryButton';
-import { Text, View } from '@/components/Themed';
+import { FormTextField } from '@/components/ui/FormTextField';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { Text, View } from '@/components/ui/Themed';
 import type { CreateGroupValues } from '@/forms/auth-group-schemas';
 import { createGroupSchema } from '@/forms/auth-group-schemas';
 import { setPreferredGroupId } from '@/lib/active-group-preference';

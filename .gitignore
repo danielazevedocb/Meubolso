@@ -48,5 +48,3 @@ yarn-error.*
 /ios
 /android
 
-.cursor/
-docs/

@@ -11,9 +11,9 @@ import {
 } from 'react-native';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 
-import { FormTextField } from '@/components/FormTextField';
-import { PrimaryButton } from '@/components/PrimaryButton';
-import { Text, View } from '@/components/Themed';
+import { FormTextField } from '@/components/ui/FormTextField';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { Text, View } from '@/components/ui/Themed';
 import type { SignUpValues } from '@/forms/auth-group-schemas';
 import { signUpSchema } from '@/forms/auth-group-schemas';
 import { supabase } from '@/lib/supabase';

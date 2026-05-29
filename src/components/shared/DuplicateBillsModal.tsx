@@ -7,8 +7,8 @@ import {
   useColorScheme,
 } from 'react-native';
 
-import { PrimaryButton } from '@/components/PrimaryButton';
-import { Text, View } from '@/components/Themed';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { Text, View } from '@/components/ui/Themed';
 import Colors from '@/constants/Colors';
 import { formatMonthHeadingPt } from '@/lib/month-key';
 import type { DuplicatePreview } from '@/services/bill-duplication';

@@ -5,9 +5,9 @@ import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet } from 'react
 
 import { useFocusEffect } from 'expo-router';
 
-import { PrimaryButton } from '@/components/PrimaryButton';
-import { ScreenBody } from '@/components/ScreenBody';
-import { Text, View } from '@/components/Themed';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { ScreenBody } from '@/components/ui/ScreenBody';
+import { Text, View } from '@/components/ui/Themed';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useColorScheme } from '@/hooks/useColorScheme';

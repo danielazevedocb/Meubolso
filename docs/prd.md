@@ -272,8 +272,8 @@ updated_by   uuid REFERENCES users(id)
 | Mobile | Expo (React Native) | iOS e Android com uma única base de código |
 | Backend/DB | Supabase (PostgreSQL) | Banco relacional, tempo real via Realtime, gratuito para esse volume |
 | Autenticação | Supabase Auth | Integrado ao banco, suporte a e-mail/senha |
-| Sincronização | Supabase Realtime | Subscriptions em tempo real por tabela/linha |
-| State | Zustand ou Context API | Simples para o escopo do app |
+| Sincronização | Supabase Realtime | Presence (indicador online) + `postgres_changes` em `bills`/`months` para sync ao vivo entre membros |
+| State | Context API | `AuthProvider` global; estado de tela com `useState`/`useEffect`+cancel-token; sem Zustand |
 
 ---
 

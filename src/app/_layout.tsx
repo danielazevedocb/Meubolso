@@ -10,7 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import 'react-native-reanimated';
 
-import { SupabaseConfigMissing } from '@/components/SupabaseConfigMissing';
+import { SupabaseConfigMissing } from '@/components/shared/SupabaseConfigMissing';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { useAuth } from '@/hooks/useAuth';

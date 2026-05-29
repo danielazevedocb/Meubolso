@@ -30,7 +30,9 @@
         "backgroundColor": "#000000",
         "barStyle": "light-content"
       },
-      "package": "com.danielazevedocb.meubolso"
+      "package": "com.danielazevedocb.meubolso",
+      "enableProguardInReleaseBuilds": true,
+      "enableShrinkResourcesInReleaseBuilds": true
     },
     "web": {
       "bundler": "metro",

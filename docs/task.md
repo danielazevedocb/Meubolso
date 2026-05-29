@@ -48,7 +48,7 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 | Integrar Supabase Auth (e-mail/senha) no app | concluído — `src/app/(auth)/sign-in.tsx`, `(auth)/sign-up.tsx`, cliente `src/lib/supabase.ts` |
 | Fluxo de cadastro e login com validação (Zod/RHF conforme regras) | concluído — `react-hook-form` + `zod` + schemas em `src/forms/auth-group-schemas.ts` |
 | Sessão persistente segura (ex.: SecureStore onde aplicável) | concluído — persistência oficial com AsyncStorage (`supabase.ts`); avaliar SecureStore numa revisão posterior de modelo de tokens |
-| Gating de rotas Expo Router (onboarding autenticado vs. convidado) | concluído — `Stack.Protected` + `AuthProvider` em `src/app/_layout.tsx`; fluxos `(auth)` / `(onboarding)` / `(tabs)` |
+| Gating de rotas Expo Router (onboarding autenticado vs. convidado) | concluído — `Stack.Protected` + `AuthProvider` em `src/app/_layout.tsx`; fluxos `(auth)` / `(app)` |
 | Exibir identidade do usuário (nome/avatar quando houver) | concluído — nome na home (`profiles.display_name`); avatar quando campo existir (UI placeholder futura) |
 
 ---
@@ -67,8 +67,8 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 | Tarefa | Status |
 |--------|--------|
 | Onboarding: criar grupo / entrar com código / usar solo | concluído — `src/app/(onboarding)/` + RPC `join_group_by_invite` / pref. solo AsyncStorage `@meubolso/pref_solo_mode` |
-| Tela principal: mês atual, navegação entre meses, cards por membro | concluído — `src/app/(tabs)/index.tsx`, serviço `src/services/dashboard.ts`, mês `YYYY-MM` + setas; cria linha em `months` se faltar |
-| Tela de contas por membro: lista, totais, salário, nota do mês | concluído — `src/app/(tabs)/contas.tsx` + serviços `bills` / `month-settings` |
+| Tela principal: mês atual, navegação entre meses, cards por membro | concluído — `src/app/(app)/overview.tsx`, serviço `src/services/dashboard.ts`, mês `YYYY-MM` + setas; cria linha em `months` se faltar |
+| Tela de contas por membro: lista, totais, salário, nota do mês | concluído — `src/app/(app)/contas.tsx` + serviços `bills` / `month-settings` |
 | Adicionar/editar conta (modal/tela) + confirmação ao editar conta de outro membro | concluído — `BillEditorModal` + aviso RLS em edição alheia |
 | Marcar pago/pendente, excluir com confirmação | concluído — toggle otimista + soft-delete `deleted_at` + `Alert` |
 | Indicador “membro online” (Realtime/presence conforme design) | concluído — `useGroupPresence`: canal `group-presence:{groupId}`, presence key = `userId`; indicador nos cards da home e chips em Contas |
@@ -94,7 +94,12 @@ Atualizar este arquivo ao iniciar (`em progresso`) e ao concluir (`concluído`) 
 | Tarefa | Status |
 |--------|--------|
 | Estratégia de logs/crash em produção (sem PII indevida) | parcial — princípios em `README.md` § Observabilidade; sem SDK de crash/analytics integrado |
-| Pipeline EAS Build (iOS/Android) e critérios de release v1.0 | concluído — `eas.json`, scripts `eas:build` / `eas:submit`, checklist em `README.md` |
+| Pipeline EAS Build (iOS/Android) e critérios de release v1.0 | concluído — `eas.json`, scripts `eas:build` / `eas:build:preview` / `eas:submit`, checklist em `README.md` |
+| Preview build Android (APK standalone sem Metro) | concluído — `eas.json` perfil `preview` já configurado (`buildType: apk`, sem `developmentClient`); script `npm run eas:build:preview` |
+| Teste de conexão Supabase | concluído — `npm run test:connection` → `scripts/test-connection.mjs`; exit 0 = OK, pinga `/auth/v1/health` com `apikey` anon |
+| Performance: virtualização da lista de contas | concluído — `ScrollView`+`.map()` → `FlatList` com `keyExtractor`/`renderItem`/`ListEmptyComponent` em `contas.tsx`; `Intl.NumberFormat` redundante extraído para const de módulo |
+| Organização leve: split `components/` em `ui/` + `shared/` | concluído — `src/components/ui/` (Themed, PrimaryButton, FormTextField, ScreenBody); `src/components/shared/` (BillEditorModal, DuplicateBillsModal, MemberMonthCard, MeubolsoWordmark, SupabaseConfigMissing, ContasBillCard); dead code removido |
+| Criar `CLAUDE.md` de projeto | concluído — raiz do repo; documenta rotas, camadas, padrões e comandos |
 
 ---
 
@@ -106,8 +111,8 @@ Validação contra código (`src`) + migrações (`supabase/migrations`). Legend
 |---|--------|--------|--------|
 | 1 | Cadastro e login e-mail/senha | concluído | `(auth)/sign-in`, `sign-up`, Zod/RHF |
 | 2 | Criar grupo e convidar por código | concluído | Onboarding + `invite_code`; entrada via RPC `join_group_by_invite` |
-| 3 | Membros veem contas uns dos outros em tempo real | parcial | RLS permite ler contas do grupo; migrações publicam Realtime em `bills`/`months`/`group_members`, mas o app **não** subscreve `postgres_changes` — só **Presence** (`useGroupPresence`). Lista/resumo atualizam em nova carga/navegação, não ao vivo entre dispositivos. |
-| 4 | Adicionar conta reflete imediatamente para outros | pendente | Depende de subscription Realtime ou pull ao focar ecrã; hoje não há listener Supabase nas telas de visão geral/contas. |
+| 3 | Membros veem contas uns dos outros em tempo real | concluído | `useGroupRealtime` subscreve `postgres_changes` em `bills` e `months` (filtrado por `group_id` ou `user_id`); wired em `overview.tsx` e `contas.tsx`; RLS garante que cada cliente só recebe mudanças que pode ler. |
+| 4 | Adicionar conta reflete imediatamente para outros | concluído | Qualquer INSERT/UPDATE/DELETE em `bills`/`months` dispara `onChange` via `useGroupRealtime` (debounce 300ms) → reload automático sem interação do usuário. |
 | 5 | Saldo recalculado automaticamente | concluído | Totais/saldo derivados de bill list + `months.salary` em `useContasScreen` / `loadMonthOverview`; após mutations chama-se `refreshMemberData` / reload. |
 | 6 | Marcar conta como paga | concluído | Toggle otimista + persistência em `bills.paid` |
 | 7 | Navegar entre meses anteriores | concluído | Home e Contas com `monthLabel` / setas |

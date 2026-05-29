@@ -1,6 +1,6 @@
 # Meubolso
 
-App mobile e web de **finanças pessoais em grupo** (FinançasPessoal): contas mensais compartilhadas, modo solo e convites por código. Cliente em **Expo** (SDK 54) com **Expo Router**, **Supabase** (Auth + Postgres + RLS) e **TypeScript**.
+App mobile e web de **finanças pessoais em grupo** (FinançasPessoal): contas mensais compartilhadas, modo solo e convites por código. Cliente em **Expo** (SDK 56) com **Expo Router**, **Supabase** (Auth + Postgres + RLS + Realtime) e **TypeScript**.
 
 ## Funcionalidades
 
@@ -14,7 +14,7 @@ App mobile e web de **finanças pessoais em grupo** (FinançasPessoal): contas m
 
 | Camada | Tecnologia |
 |--------|------------|
-| App | Expo ~54, React 19, React Native 0.81, Expo Router 6 |
+| App | Expo ~56, React 19, React Native 0.85, Expo Router ~56 |
 | Formulários | react-hook-form, Zod |
 | Backend | Supabase (`@supabase/supabase-js`) |
 | Testes | Jest + Testing Library; Playwright (E2E web) |
@@ -28,6 +28,8 @@ App mobile e web de **finanças pessoais em grupo** (FinançasPessoal): contas m
 │   │   ├── (auth)/    # Login e cadastro
 │   │   └── (app)/     # Hub, grupos, visão geral, contas, perfil
 │   ├── components/
+│   │   ├── ui/        # Primitivos (Themed, PrimaryButton, FormTextField, ScreenBody)
+│   │   └── shared/    # Compostos (BillEditorModal, ContasBillCard, MemberMonthCard…)
 │   ├── hooks/
 │   ├── services/      # Chamadas Supabase
 │   ├── forms/         # Schemas Zod
@@ -40,11 +42,11 @@ App mobile e web de **finanças pessoais em grupo** (FinançasPessoal): contas m
 └── package.json
 ```
 
-Rotas legadas em `(tabs)` e `(onboarding)` podem existir no código; o fluxo principal autenticado usa o grupo `(app)`.
+Rotas legadas em `(onboarding)` podem existir no histórico git; o fluxo principal autenticado usa `(app)`.
 
 ## Pré-requisitos
 
-- Node.js compatível com [Expo SDK 54](https://docs.expo.dev/)
+- Node.js compatível com [Expo SDK 56](https://docs.expo.dev/)
 - Projeto Supabase (dev/staging) com migrações aplicadas
 - Para E2E autenticado: usuário de teste no Supabase
 
@@ -90,7 +92,9 @@ Aplique as migrações em `supabase/migrations/` no projeto Supabase (CLI local 
 | `npm run test:e2e` | Playwright (sobe Expo web se necessário) |
 | `npm run test:e2e:ui` | Playwright UI mode |
 | `npm run format` / `format:check` | Prettier |
+| `npm run test:connection` | Ping `/auth/v1/health` no Supabase (valida `.env`) |
 | `npm run eas:build` | Wrapper `eas build` |
+| `npm run eas:build:preview` | APK standalone Android (perfil preview, sem Metro) |
 | `npm run eas:submit` | Wrapper `eas submit` |
 
 ### Testes E2E
@@ -134,9 +138,20 @@ O repositório inclui `eas.json` com perfis `development`, `preview` e `producti
 5. Exemplos de build:
 
    ```bash
-   npm run eas:build -- --profile preview --platform android
+   # Preview (APK standalone, instala direto sem Metro):
+   npm run eas:build:preview
+   # Ou equivalente:
+   npx eas build -p android --profile preview
+
+   # Production (submeter à loja):
    npm run eas:build -- --profile production --platform all
    ```
+
+   **Dev build vs Preview build:**
+   - **Development build** (`expo-dev-client`): precisa do Metro rodando (`npx expo start`). Use para desenvolvimento.
+   - **Preview build** (APK standalone): abre direto no Android, sem Metro. Use para testar a versão "como produção" antes de publicar.
+
+   Para instalar o preview: baixe o APK gerado pelo EAS, transfira para o dispositivo Android e instale (permita "Instalar de fontes desconhecidas" se necessário).
 
    Valide localmente com `npm run lint` e `npm test` antes de builds longos no EAS.
 

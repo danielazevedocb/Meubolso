@@ -15,10 +15,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useEffect, useState } from 'react';
 
-import { FormTextField } from '@/components/FormTextField';
-import { MeubolsoWordmark } from '@/components/MeubolsoWordmark';
-import { PrimaryButton } from '@/components/PrimaryButton';
-import { Text, View } from '@/components/Themed';
+import { FormTextField } from '@/components/ui/FormTextField';
+import { MeubolsoWordmark } from '@/components/shared/MeubolsoWordmark';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { Text, View } from '@/components/ui/Themed';
 import Colors from '@/constants/Colors';
 import type { SignInValues } from '@/forms/auth-group-schemas';
 import { signInSchema } from '@/forms/auth-group-schemas';

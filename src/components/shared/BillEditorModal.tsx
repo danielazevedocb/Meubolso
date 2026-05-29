@@ -11,9 +11,9 @@ import {
   Switch,
 } from 'react-native';
 
-import { FormTextField } from '@/components/FormTextField';
-import { PrimaryButton } from '@/components/PrimaryButton';
-import { Text, View } from '@/components/Themed';
+import { FormTextField } from '@/components/ui/FormTextField';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { Text, View } from '@/components/ui/Themed';
 import Colors from '@/constants/Colors';
 import { billFormSchema, type BillFormValues, parseMoneyInput } from '@/forms/bill-form-schema';
 import { useColorScheme } from '@/hooks/useColorScheme';

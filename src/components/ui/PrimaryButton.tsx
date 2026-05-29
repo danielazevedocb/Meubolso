@@ -1,7 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, type PressableProps } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { Text } from '@/components/Themed';
+import { Text } from '@/components/ui/Themed';
 
 import Colors from '@/constants/Colors';
 

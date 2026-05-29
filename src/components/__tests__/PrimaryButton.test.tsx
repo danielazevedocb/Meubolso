@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
-import { PrimaryButton } from '@/components/PrimaryButton';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 
 jest.mock('@/hooks/useColorScheme', () => ({
   useColorScheme: () => 'light',

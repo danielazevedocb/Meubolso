@@ -2,7 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { memo } from 'react';
 import { Platform, Pressable, StyleSheet, View as RNView } from 'react-native';
 
-import { Text } from '@/components/Themed';
+import { Text } from '@/components/ui/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import type { MemberMonthSnapshot } from '@/types/finance';

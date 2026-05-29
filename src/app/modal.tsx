@@ -6,7 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Stack, useRouter } from 'expo-router';
 import { Platform, Pressable, StyleSheet } from 'react-native';
 
-import { Text, View } from '@/components/Themed';
+import { Text, View } from '@/components/ui/Themed';
 import { aboutLinks, isConfiguredExternalUrl } from '@/constants/about';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
